@@ -22,6 +22,7 @@ function Main:Init()
 end
 
 function Main:LoadUI()
+    -- Use the updated UI with hardcoded icons
     self.UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/UI.lua"))()
     self.UI:CreateMainWindow()
 end
