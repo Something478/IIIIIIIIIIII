@@ -17,19 +17,28 @@ function UI:CreateMainWindow()
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
     
     self.MainButton = Instance.new("ImageButton")
-    self.MainButton.Size = UDim2.new(0, 50, 0, 50)
-    self.MainButton.Position = UDim2.new(0, 20, 0.5, -25)
+    self.MainButton.Size = UDim2.new(0, 45, 0, 45)
+    self.MainButton.Position = UDim2.new(0.5, -22.5, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
     self.MainButton.Image = IconManager:GetIcon("main")
+    self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
     self.MainButton.Parent = self.ScreenGui
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 12)
+    buttonCorner.CornerRadius = UDim.new(0, 10)
     buttonCorner.Parent = self.MainButton
+    
+    self.MainButton.MouseEnter:Connect(function()
+        self.MainButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
+    self.MainButton.MouseLeave:Connect(function()
+        self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
+    end)
     
     self.CommandBar = Instance.new("TextBox")
     self.CommandBar.Size = UDim2.new(0, 400, 0, 45)
-    self.CommandBar.Position = UDim2.new(0.5, -200, 0, -60) 
+    self.CommandBar.Position = UDim2.new(0.5, -200, 0, -60)
     self.CommandBar.PlaceholderText = "Enter command..."
     self.CommandBar.Text = ""
     self.CommandBar.ClearTextOnFocus = false
@@ -45,10 +54,15 @@ function UI:CreateMainWindow()
     commandCorner.Parent = self.CommandBar
     
     self.CommandBar.TextStrokeTransparency = 1
-    self.CommandBar.TextStrokeColor3 = Color3.new(0, 0, 0)
     
     self.MainButton.MouseButton1Click:Connect(function()
         self:ToggleCommandBar()
+    end)
+    
+    self.CommandBar.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            self:HideCommandBar()
+        end
     end)
     
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -97,7 +111,7 @@ end
 function UI:CreateNotificationFrame()
     self.NotifFrame = Instance.new("Frame")
     self.NotifFrame.Size = UDim2.new(0, 320, 0, 70)
-    self.NotifFrame.Position = UDim2.new(1, 350, 1, -100) 
+    self.NotifFrame.Position = UDim2.new(1, 350, 1, -100)
     self.NotifFrame.BackgroundColor3 = self.MainColor
     self.NotifFrame.BackgroundTransparency = 0.1
     self.NotifFrame.Visible = false
@@ -140,14 +154,14 @@ function UI:Notify(message, type)
     
     self.NotifFrame.Position = UDim2.new(1, 350, 1, -100)
     local tweenIn = TweenService:Create(self.NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(1, -350, 1, -100) 
+        Position = UDim2.new(1, -350, 1, -100)
     })
     tweenIn:Play()
     
     task.delay(3, function()
         if self.NotifFrame.Visible then
             local tweenOut = TweenService:Create(self.NotifFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(1, 350, 1, -100) 
+                Position = UDim2.new(1, 350, 1, -100)
             })
             tweenOut:Play()
             tweenOut.Completed:Connect(function()
@@ -157,4 +171,4 @@ function UI:Notify(message, type)
     end)
 end
 
-return UI
+return UIl
