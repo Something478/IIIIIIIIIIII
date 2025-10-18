@@ -2,7 +2,13 @@
 A admin script like infinite yield.
 ---
 My profiles:  
-https://scriptblox.com/u/StarFlow
+```
+<div align="left"> -- left or right
+  <a href="https://scriptblox.com/u/StarFlow"> -- url to redirect
+    <img src="https://scriptblox.com" alt="StarFlow"> -- src is the image and alt is the label if image load failed
+  </a>
+</div>
+```  
   
 Script:  
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/Source.lua"))()
+```loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/Source.lua"))()```
