@@ -4,7 +4,7 @@ A admin script like infinite yield.
 My profiles:  
 <div align="left"> 
   <a href="https://scriptblox.com/u/StarFlow"> 
-    <img src="https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/GitHub_Images/Pr.png" alt="StarFlow"> 
+    <img src="https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/GitHub_Images/Profile_1.png" alt="StarFlow"> 
   </a>
 </div>
   
