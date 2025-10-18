@@ -49,7 +49,6 @@ function Commands:RegisterAll()
             end,
             Description = "Disable noclip"
         },
-        
         {
             Names = {"watch", "view", "spectate"},
             Function = function(args)
@@ -77,6 +76,13 @@ function Commands:RegisterAll()
                 Main:ResetCharacter()
             end,
             Description = "Reset your character"
+        },
+        {
+            Names = {"commands", "cmds", "help"},
+            Function = function(args)
+                Main.UI:ShowCommandsList()
+            end,
+            Description = "Show all available commands"
         }
     }
 end
