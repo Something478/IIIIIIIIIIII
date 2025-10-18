@@ -7,7 +7,23 @@ UI.MainColor = Color3.fromRGB(30, 30, 40)
 UI.AccentColor = Color3.fromRGB(0, 170, 255)
 UI.TextColor = Color3.fromRGB(255, 255, 255)
 
-local IconManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/IconManager.lua"))()
+
+local IconManager = {}
+IconManager.Loaded = true
+
+function IconManager:Load()
+    self.MainIcon = "rbxassetid://81795192450289"
+    self.ErrorIcon = "rbxassetid://135081399873960"
+end
+
+function IconManager:GetIcon(iconType)
+    if iconType == "error" then
+        return self.ErrorIcon
+    else
+        return self.MainIcon
+    end
+end
+
 IconManager:Load()
 
 function UI:CreateMainWindow()
@@ -15,27 +31,27 @@ function UI:CreateMainWindow()
     self.ScreenGui.Name = "SyntaxCommands"
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-    
+
     self.MainButton = Instance.new("ImageButton")
     self.MainButton.Size = UDim2.new(0, 45, 0, 45)
     self.MainButton.Position = UDim2.new(0.5, -22.5, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Image = IconManager:GetIcon("logo")
+    self.MainButton.Image = IconManager:GetIcon("main")
     self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
     self.MainButton.Parent = self.ScreenGui
-    
+
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 10)
     buttonCorner.Parent = self.MainButton
-    
+
     self.MainButton.MouseEnter:Connect(function()
         self.MainButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
     end)
-    
+
     self.MainButton.MouseLeave:Connect(function()
         self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
     end)
-    
+
     self.CommandBar = Instance.new("TextBox")
     self.CommandBar.Size = UDim2.new(0, 400, 0, 45)
     self.CommandBar.Position = UDim2.new(0.5, -200, 0, -60)
@@ -48,29 +64,29 @@ function UI:CreateMainWindow()
     self.CommandBar.TextSize = 16
     self.CommandBar.Visible = false
     self.CommandBar.Parent = self.ScreenGui
-    
+
     local commandCorner = Instance.new("UICorner")
     commandCorner.CornerRadius = UDim.new(0, 10)
     commandCorner.Parent = self.CommandBar
-    
+
     self.CommandBar.TextStrokeTransparency = 1
-    
+
     self.MainButton.MouseButton1Click:Connect(function()
         self:ToggleCommandBar()
     end)
-    
+
     self.CommandBar.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             self:HideCommandBar()
         end
     end)
-    
+
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if input.KeyCode == Enum.KeyCode.Escape and self.CommandBar.Visible then
             self:HideCommandBar()
         end
     end)
-    
+
     self:CreateNotificationFrame()
 end
 
@@ -85,12 +101,12 @@ end
 function UI:ShowCommandBar()
     self.CommandBar.Visible = true
     self.CommandBar.Position = UDim2.new(0.5, -200, 0, -60)
-    
+
     local slideIn = TweenService:Create(self.CommandBar, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(0.5, -200, 0, 25)
     })
     slideIn:Play()
-    
+
     slideIn.Completed:Connect(function()
         self.CommandBar:CaptureFocus()
     end)
@@ -101,7 +117,7 @@ function UI:HideCommandBar()
         Position = UDim2.new(0.5, -200, 0, -60)
     })
     slideOut:Play()
-    
+
     slideOut.Completed:Connect(function()
         self.CommandBar.Visible = false
         self.CommandBar.Text = ""
@@ -116,18 +132,18 @@ function UI:CreateNotificationFrame()
     self.NotifFrame.BackgroundTransparency = 0.1
     self.NotifFrame.Visible = false
     self.NotifFrame.Parent = self.ScreenGui
-    
+
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = self.NotifFrame
-    
+
     self.NotifIcon = Instance.new("ImageLabel")
     self.NotifIcon.Size = UDim2.new(0, 35, 0, 35)
     self.NotifIcon.Position = UDim2.new(0, 15, 0.5, -17.5)
     self.NotifIcon.BackgroundTransparency = 1
     self.NotifIcon.Image = IconManager:GetIcon("main")
     self.NotifIcon.Parent = self.NotifFrame
-    
+
     self.NotifText = Instance.new("TextLabel")
     self.NotifText.Size = UDim2.new(1, -65, 1, -20)
     self.NotifText.Position = UDim2.new(0, 65, 0, 10)
@@ -143,21 +159,21 @@ end
 
 function UI:Notify(message, type)
     self.NotifText.Text = message
-    
+
     if type == "error" then
         self.NotifIcon.Image = IconManager:GetIcon("error")
     else
         self.NotifIcon.Image = IconManager:GetIcon("main")
     end
-    
+
     self.NotifFrame.Visible = true
-    
+
     self.NotifFrame.Position = UDim2.new(1, 350, 1, -100)
     local tweenIn = TweenService:Create(self.NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(1, -350, 1, -100)
     })
     tweenIn:Play()
-    
+
     task.delay(3, function()
         if self.NotifFrame.Visible then
             local tweenOut = TweenService:Create(self.NotifFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
