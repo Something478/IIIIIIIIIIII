@@ -1,5 +1,6 @@
-![I](https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/GitHub_images/logo.jpg)
+![SC](https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/GitHub_images/logo.jpg)  
 A admin script like infinite yield.
 ---
-Loader ↓  
+---
+Script:  
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/Source.lua"))()
