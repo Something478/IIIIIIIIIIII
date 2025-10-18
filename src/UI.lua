@@ -20,7 +20,7 @@ function UI:CreateMainWindow()
     self.MainButton.Size = UDim2.new(0, 45, 0, 45)
     self.MainButton.Position = UDim2.new(0.5, -22.5, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Image = IconManager:GetIcon("main")
+    self.MainButton.Image = IconManager:GetIcon("logo")
     self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
     self.MainButton.Parent = self.ScreenGui
     
