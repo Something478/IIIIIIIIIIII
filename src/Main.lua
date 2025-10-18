@@ -13,12 +13,12 @@ Main.Flying = false
 Main.NoClip = false
 Main.Spectating = nil
 Main.FlyBV = nil
+Main.FlyButton = nil
 
 function Main:Init()
     self:LoadUI()
     self:LoadCommands()
     self:SetupConnections()
-    self:CreateMobileFlyToggle()
 end
 
 function Main:LoadUI()
@@ -39,7 +39,6 @@ function Main:SetupConnections()
         end
     end)
 
-  
     RunService.Stepped:Connect(function()
         if self.NoClip and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -50,14 +49,13 @@ function Main:SetupConnections()
         end
     end)
 
-  
     self.FlyConnection = RunService.Heartbeat:Connect(function()
         if self.Flying and self.FlyBV then
             local cam = workspace.CurrentCamera
             self.FlyBV.Velocity = Vector3.new()
-            
+
             if UserInputService:GetFocusedTextBox() then return end
-            
+
             local moveDir = Vector3.new()
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -65,38 +63,42 @@ function Main:SetupConnections()
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-            
+
             self.FlyBV.Velocity = moveDir * 50
         end
     end)
 end
 
 function Main:CreateMobileFlyToggle()
-    local flyButton = Instance.new("TextButton")
-    flyButton.Size = UDim2.new(0, 70, 0, 70)
-    flyButton.Position = UDim2.new(0, 50, 0, 200)
-    flyButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    flyButton.Text = "FLY\nOFF"
-    flyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    flyButton.Font = Enum.Font.GothamBold
-    flyButton.TextSize = 14
-    flyButton.TextWrapped = true
-    flyButton.ZIndex = 100
-    flyButton.Parent = self.UI.ScreenGui
-    
+    if self.FlyButton then
+        self.FlyButton:Destroy()
+    end
+
+    self.FlyButton = Instance.new("TextButton")
+    self.FlyButton.Size = UDim2.new(0, 70, 0, 70)
+    self.FlyButton.Position = UDim2.new(0, 50, 0, 200)
+    self.FlyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+    self.FlyButton.Text = "FLY\nON"
+    self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.FlyButton.Font = Enum.Font.GothamBold
+    self.FlyButton.TextSize = 14
+    self.FlyButton.TextWrapped = true
+    self.FlyButton.ZIndex = 100
+    self.FlyButton.Parent = self.UI.ScreenGui
+
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(1, 0)
-    UICorner.Parent = flyButton
-    
+    UICorner.Parent = self.FlyButton
+
     local dragging = false
     local dragInput, dragStart, startPos
-    
-    flyButton.InputBegan:Connect(function(input)
+
+    self.FlyButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = flyButton.Position
-            
+            startPos = self.FlyButton.Position
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -104,29 +106,22 @@ function Main:CreateMobileFlyToggle()
             end)
         end
     end)
-    
-    flyButton.InputChanged:Connect(function(input)
+
+    self.FlyButton.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input == dragInput) then
             local delta = input.Position - dragStart
-            flyButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            self.FlyButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
-    
-    flyButton.MouseButton1Click:Connect(function()
+
+    self.FlyButton.MouseButton1Click:Connect(function()
         self:FlyToggle()
-        if self.Flying then
-            flyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
-            flyButton.Text = "FLY\nON"
-        else
-            flyButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-            flyButton.Text = "FLY\nOFF"
-        end
     end)
 end
 
@@ -134,24 +129,26 @@ function Main:ExecuteCommand(cmd)
     if cmd:sub(1, 1) == self.Prefix then
         cmd = cmd:sub(2)
     end
-    
+
     local args = {}
     for arg in cmd:gmatch("%S+") do
         table.insert(args, arg:lower())
     end
-    
+
     if #args == 0 then return end
-    
+
     local commandName = args[1]
     table.remove(args, 1)
-    
+
     self.Commands:Execute(commandName, args)
 end
 
 function Main:FlyToggle()
     self.Flying = not self.Flying
-    
+
     if self.Flying then
+        self:CreateMobileFlyToggle()
+        
         local character = LocalPlayer.Character
         if character and character:FindFirstChild("HumanoidRootPart") then
             self.FlyBV = Instance.new("BodyVelocity")
@@ -162,6 +159,11 @@ function Main:FlyToggle()
         end
         self.UI:Notify("Flight enabled", "fly")
     else
+        if self.FlyButton then
+            self.FlyButton:Destroy()
+            self.FlyButton = nil
+        end
+        
         if self.FlyBV then
             self.FlyBV:Destroy()
             self.FlyBV = nil
