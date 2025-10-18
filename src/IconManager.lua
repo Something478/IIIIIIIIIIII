@@ -1,28 +1,9 @@
 local IconManager = {}
-IconManager.Loaded = false
+IconManager.Loaded = true
 
 function IconManager:Load()
-    local success, data = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/data/icons.json")
-    end)
-
-    if success then
-        local jsonSuccess, decoded = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(data)
-        end)
-        
-        if jsonSuccess then
-            self.MainIcon = decoded.main
-            self.ErrorIcon = decoded.error
-            self.Loaded = true
-        else
-            self.MainIcon = "rbxassetid://0"
-            self.ErrorIcon = "rbxassetid://0"
-        end
-    else
-        self.MainIcon = "rbxassetid://0"
-        self.ErrorIcon = "rbxassetid://0"
-    end
+    self.MainIcon = "rbxassetid://81795192450289"
+    self.ErrorIcon = "rbxassetid://135081399873960"
 end
 
 function IconManager:GetIcon(iconType)
