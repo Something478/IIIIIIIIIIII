@@ -74,21 +74,47 @@ function Main:CreateMobileFlyToggle()
         self.FlyButton:Destroy()
     end
 
-    self.FlyButton = Instance.new("TextButton")
-    self.FlyButton.Size = UDim2.new(0, 70, 0, 70)
-    self.FlyButton.Position = UDim2.new(0, 50, 0, 200)
-    self.FlyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
-    self.FlyButton.Text = "FLY\nON"
-    self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.FlyButton.Font = Enum.Font.GothamBold
-    self.FlyButton.TextSize = 14
-    self.FlyButton.TextWrapped = true
-    self.FlyButton.ZIndex = 100
+    self.FlyButton = Instance.new("Frame")
+    self.FlyButton.Size = UDim2.new(0, 80, 0, 80)
+    self.FlyButton.Position = UDim2.new(0, 30, 0.5, -40)
+    self.FlyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    self.FlyButton.BackgroundTransparency = 0.1
     self.FlyButton.Parent = self.UI.ScreenGui
 
     local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(1, 0)
+    UICorner.CornerRadius = UDim.new(0, 16)
     UICorner.Parent = self.FlyButton
+
+    local flyBtn = Instance.new("TextButton")
+    flyBtn.Size = UDim2.new(1, -10, 1, -10)
+    flyBtn.Position = UDim2.new(0, 5, 0, 5)
+    flyBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+    flyBtn.Text = "FLY\nON"
+    flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flyBtn.Font = Enum.Font.GothamBlack
+    flyBtn.TextSize = 16
+    flyBtn.TextWrapped = true
+    flyBtn.ZIndex = 100
+    flyBtn.Parent = self.FlyButton
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 12)
+    btnCorner.Parent = flyBtn
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(255, 255, 255)
+    UIStroke.Thickness = 2
+    UIStroke.Parent = flyBtn
+
+    flyBtn.MouseEnter:Connect(function()
+        flyBtn.BackgroundColor3 = Color3.fromRGB(70, 255, 70)
+        UIStroke.Thickness = 3
+    end)
+
+    flyBtn.MouseLeave:Connect(function()
+        flyBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+        UIStroke.Thickness = 2
+    end)
 
     local dragging = false
     local dragInput, dragStart, startPos
@@ -120,7 +146,7 @@ function Main:CreateMobileFlyToggle()
         end
     end)
 
-    self.FlyButton.MouseButton1Click:Connect(function()
+    flyBtn.MouseButton1Click:Connect(function()
         self:FlyToggle()
     end)
 end
@@ -160,8 +186,23 @@ function Main:FlyToggle()
         self.UI:Notify("Flight enabled", "fly")
     else
         if self.FlyButton then
-            self.FlyButton:Destroy()
-            self.FlyButton = nil
+            local flyBtn = self.FlyButton:FindFirstChildOfClass("TextButton")
+            if flyBtn then
+                flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+                flyBtn.Text = "FLY\nOFF"
+                
+                local tweenOut = TweenService:Create(self.FlyButton, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {
+                    BackgroundTransparency = 1
+                })
+                tweenOut:Play()
+                
+                tweenOut.Completed:Wait()
+                self.FlyButton:Destroy()
+                self.FlyButton = nil
+            else
+                self.FlyButton:Destroy()
+                self.FlyButton = nil
+            end
         end
         
         if self.FlyBV then
