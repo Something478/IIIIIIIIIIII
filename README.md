@@ -1,4 +1,4 @@
-![Logo](https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/icons/icon.png)
+![I](https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/GitHub_images/logo.jpg)
 # Syntax Commands
 A admin script like infinite yield.
 ---
