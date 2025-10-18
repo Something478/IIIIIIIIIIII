@@ -3,28 +3,11 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-UI.MainColor = Color3.fromRGB(30, 30, 40)
+UI.MainColor = Color3.fromRGB(25, 25, 35)
 UI.AccentColor = Color3.fromRGB(0, 170, 255)
 UI.TextColor = Color3.fromRGB(255, 255, 255)
-
-
-local IconManager = {}
-IconManager.Loaded = true
-
-function IconManager:Load()
-    self.MainIcon = "rbxassetid://81795192450289"
-    self.ErrorIcon = "rbxassetid://135081399873960"
-end
-
-function IconManager:GetIcon(iconType)
-    if iconType == "error" then
-        return self.ErrorIcon
-    else
-        return self.MainIcon
-    end
-end
-
-IconManager:Load()
+UI.SecondaryColor = Color3.fromRGB(40, 40, 50)
+UI.HoverColor = Color3.fromRGB(35, 35, 45)
 
 function UI:CreateMainWindow()
     self.ScreenGui = Instance.new("ScreenGui")
@@ -32,24 +15,26 @@ function UI:CreateMainWindow()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-    self.MainButton = Instance.new("ImageButton")
-    self.MainButton.Size = UDim2.new(0, 45, 0, 45)
-    self.MainButton.Position = UDim2.new(0.5, -22.5, 0, 20)
+    self.MainButton = Instance.new("TextButton")
+    self.MainButton.Size = UDim2.new(0, 60, 0, 60)
+    self.MainButton.Position = UDim2.new(0.5, -30, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Image = IconManager:GetIcon("main")
-    self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
+    self.MainButton.Text = "SC"
+    self.MainButton.TextColor3 = self.TextColor
+    self.MainButton.TextScaled = true
+    self.MainButton.Font = Enum.Font.FredokaOne
     self.MainButton.Parent = self.ScreenGui
 
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 10)
+    buttonCorner.CornerRadius = UDim.new(1, 0)
     buttonCorner.Parent = self.MainButton
 
     self.MainButton.MouseEnter:Connect(function()
-        self.MainButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        self.MainButton.BackgroundColor3 = self.HoverColor
     end)
 
     self.MainButton.MouseLeave:Connect(function()
-        self.MainButton.ImageColor3 = Color3.fromRGB(200, 200, 200)
+        self.MainButton.BackgroundColor3 = self.MainColor
     end)
 
     self.CommandBar = Instance.new("TextBox")
@@ -60,7 +45,7 @@ function UI:CreateMainWindow()
     self.CommandBar.ClearTextOnFocus = false
     self.CommandBar.TextColor3 = self.TextColor
     self.CommandBar.BackgroundColor3 = self.MainColor
-    self.CommandBar.Font = Enum.Font.GothamSemibold
+    self.CommandBar.Font = Enum.Font.FredokaOne
     self.CommandBar.TextSize = 16
     self.CommandBar.Visible = false
     self.CommandBar.Parent = self.ScreenGui
@@ -137,11 +122,15 @@ function UI:CreateNotificationFrame()
     UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = self.NotifFrame
 
-    self.NotifIcon = Instance.new("ImageLabel")
+    self.NotifIcon = Instance.new("TextLabel")
     self.NotifIcon.Size = UDim2.new(0, 35, 0, 35)
     self.NotifIcon.Position = UDim2.new(0, 15, 0.5, -17.5)
     self.NotifIcon.BackgroundTransparency = 1
-    self.NotifIcon.Image = IconManager:GetIcon("main")
+    self.NotifIcon.Text = "SC"
+    self.NotifIcon.TextColor3 = self.AccentColor
+    self.NotifIcon.Font = Enum.Font.FredokaOne
+    self.NotifIcon.TextSize = 20
+    self.NotifIcon.TextScaled = true
     self.NotifIcon.Parent = self.NotifFrame
 
     self.NotifText = Instance.new("TextLabel")
@@ -149,7 +138,7 @@ function UI:CreateNotificationFrame()
     self.NotifText.Position = UDim2.new(0, 65, 0, 10)
     self.NotifText.BackgroundTransparency = 1
     self.NotifText.TextColor3 = self.TextColor
-    self.NotifText.Font = Enum.Font.GothamSemibold
+    self.NotifText.Font = Enum.Font.FredokaOne
     self.NotifText.TextSize = 14
     self.NotifText.TextWrapped = true
     self.NotifText.TextXAlignment = Enum.TextXAlignment.Left
@@ -161,9 +150,11 @@ function UI:Notify(message, type)
     self.NotifText.Text = message
 
     if type == "error" then
-        self.NotifIcon.Image = IconManager:GetIcon("error")
+        self.NotifIcon.Text = "❌"
+        self.NotifIcon.TextColor3 = Color3.fromRGB(255, 80, 80)
     else
-        self.NotifIcon.Image = IconManager:GetIcon("main")
+        self.NotifIcon.Text = "SC"
+        self.NotifIcon.TextColor3 = self.AccentColor
     end
 
     self.NotifFrame.Visible = true
