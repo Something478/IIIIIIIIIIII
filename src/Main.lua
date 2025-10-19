@@ -1,12 +1,13 @@
 local Main = {}
-Main.Version = "1.0.0"
-Main.Prefix = ";"
+Main.Version = "1.2"
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextChatService = game:GetService("TextChatService")
+local StarterGui = game:GetService("StarterGui")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -18,6 +19,16 @@ Main.FlyButton = nil
 Main.ESPEnabled = false
 Main.ESPHandles = {}
 Main.NPCESPEnabled = false
+Main.Waypoints = {}
+Main.AntiAFK = false
+Main.AutoClicker = false
+Main.Speed = 16
+Main.JumpPower = 50
+Main.GodMode = false
+Main.InfiniteJump = false
+Main.XRay = false
+Main.Fullbright = false
+Main.FlySpeed = 50
 
 Main.MobileFlyControls = {
     W = false,
@@ -36,7 +47,8 @@ function Main:Init()
     self:LoadCommands()
     self:SetupConnections()
     self:CreateMobileFlyToggle()
-    self.UI:Notify("Syntax Commands loaded! Use " .. self.Prefix .. "commands", "info")
+    self:CreateQuickAccessPanel()
+    self.UI:Notify("Syntax Commands " .. self.Version .. " Loaded!", "success")
 end
 
 function Main:LoadUI()
@@ -52,8 +64,11 @@ end
 function Main:SetupConnections()
     self.Connections.commandBar = self.UI.CommandBar.FocusLost:Connect(function(enterPressed)
         if enterPressed then
-            self:ExecuteCommand(self.UI.CommandBar.Text)
-            self.UI.CommandBar.Text = ""
+            local command = self.UI.CommandBar.Text
+            if command ~= "" then
+                self:ExecuteCommand(command)
+                self.UI.CommandBar.Text = ""
+            end
         end
     end)
 
@@ -82,37 +97,145 @@ function Main:SetupConnections()
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) or self.MobileFlyControls.Space then moveDir = moveDir + Vector3.new(0, 1, 0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or self.MobileFlyControls.Shift then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-            self.FlyBV.Velocity = moveDir * 50
+            self.FlyBV.Velocity = moveDir * self.FlySpeed
         end
     end)
 
     self.Connections.characterAdded = LocalPlayer.CharacterAdded:Connect(function(character)
         character:WaitForChild("HumanoidRootPart")
         if self.Flying then
-            wait(1)
+            task.wait(1)
             self:StartFlying()
         end
         if self.NoClip then
-            self.UI:Notify("Noclip re-enabled after reset", "noclip")
+            self.UI:Notify("Noclip Re-enabled", "info")
+        end
+        if self.GodMode then
+            self:ToggleGodMode(true)
         end
     end)
 
-    self:SetupChatListener()
+    self.Connections.antiAFK = RunService.Heartbeat:Connect(function()
+        if self.AntiAFK then
+            LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+    end)
+
+    self.Connections.jump = UserInputService.JumpRequest:Connect(function()
+        if self.InfiniteJump and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+
+    self.Connections.autoClick = RunService.Heartbeat:Connect(function()
+        if self.AutoClicker then
+            mouse1click()
+        end
+    end)
 end
 
-function Main:SetupChatListener()
-    self.Connections.chatHook = LocalPlayer.Chatted:Connect(function(message)
-        if message:sub(1, 1) == self.Prefix then
-            self:ExecuteCommand(message)
-        end
+function Main:CreateQuickAccessPanel()
+    self.QuickAccess = Instance.new("Frame")
+    self.QuickAccess.Size = UDim2.new(0, 300, 0, 200)
+    self.QuickAccess.Position = UDim2.new(0, 20, 0.5, -100)
+    self.QuickAccess.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    self.QuickAccess.BackgroundTransparency = 0.1
+    self.QuickAccess.Visible = false
+    self.QuickAccess.Parent = self.UI.ScreenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = self.QuickAccess
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = self.UI.AccentColor
+    stroke.Thickness = 2
+    stroke.Parent = self.QuickAccess
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.BackgroundTransparency = 1
+    title.Text = "Quick Access"
+    title.TextColor3 = self.UI.TextColor
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.Parent = self.QuickAccess
+
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Size = UDim2.new(1, -20, 1, -50)
+    buttonContainer.Position = UDim2.new(0, 10, 0, 40)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = self.QuickAccess
+
+    local grid = Instance.new("UIGridLayout")
+    grid.CellSize = UDim2.new(0, 85, 0, 30)
+    grid.CellPadding = UDim2.new(0, 5, 0, 5)
+    grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    grid.Parent = buttonContainer
+
+    local quickButtons = {
+        {"Fly", function() self:FlyToggle() end},
+        {"Noclip", function() self:NoClipToggle() end},
+        {"ESP All", function() self:ESPAllPlayers() end},
+        {"God Mode", function() self:ToggleGodMode() end},
+        {"Speed+", function() self:SetWalkSpeed(50) end},
+        {"Reset", function() self:ResetCharacter() end},
+        {"XRay", function() self:ToggleXRay() end},
+        {"Fullbright", function() self:ToggleFullbright() end}
+    }
+
+    for i, buttonData in ipairs(quickButtons) do
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(0, 85, 0, 30)
+        button.BackgroundColor3 = self.UI.SecondaryColor
+        button.Text = buttonData[1]
+        button.TextColor3 = self.UI.TextColor
+        button.Font = Enum.Font.FredokaOne
+        button.TextSize = 12
+        button.Parent = buttonContainer
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 6)
+        btnCorner.Parent = button
+
+        button.MouseButton1Click:Connect(buttonData[2])
+        
+        button.MouseEnter:Connect(function()
+            button.BackgroundColor3 = self.UI.HoverColor
+        end)
+        
+        button.MouseLeave:Connect(function()
+            button.BackgroundColor3 = self.UI.SecondaryColor
+        end)
+    end
+
+    self.QuickAccessToggle = Instance.new("TextButton")
+    self.QuickAccessToggle.Size = UDim2.new(0, 40, 0, 40)
+    self.QuickAccessToggle.Position = UDim2.new(0, 20, 0, 80)
+    self.QuickAccessToggle.BackgroundColor3 = self.UI.MainColor
+    self.QuickAccessToggle.Text = "⚡"
+    self.QuickAccessToggle.TextColor3 = self.UI.AccentColor
+    self.QuickAccessToggle.Font = Enum.Font.GothamBlack
+    self.QuickAccessToggle.TextSize = 18
+    self.QuickAccessToggle.Parent = self.UI.ScreenGui
+
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = self.QuickAccessToggle
+
+    self.QuickAccessToggle.MouseButton1Click:Connect(function()
+        self.QuickAccess.Visible = not self.QuickAccess.Visible
     end)
 end
 
 function Main:CreateMobileFlyToggle()
-    if self.FlyButton then
-        self.FlyButton:Destroy()
-        self.FlyButton = nil
-    end
+    if self.FlyButton then return end
 
     self.FlyButton = Instance.new("TextButton")
     self.FlyButton.Size = UDim2.new(0, 80, 0, 80)
@@ -130,6 +253,11 @@ function Main:CreateMobileFlyToggle()
     btnCorner.CornerRadius = UDim.new(0, 16)
     btnCorner.Parent = self.FlyButton
 
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Thickness = 2
+    stroke.Parent = self.FlyButton
+
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -138,11 +266,6 @@ function Main:CreateMobileFlyToggle()
             dragging = true
             dragStart = input.Position
             startPos = self.FlyButton.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
         end
     end)
 
@@ -159,6 +282,12 @@ function Main:CreateMobileFlyToggle()
         end
     end)
 
+    self.FlyButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
     self.FlyButton.MouseButton1Click:Connect(function()
         self:FlyToggle()
     end)
@@ -167,10 +296,7 @@ function Main:CreateMobileFlyToggle()
 end
 
 function Main:CreateMobileFlyControls()
-    if self.MobileControlFrame then
-        self.MobileControlFrame:Destroy()
-        self.MobileControlFrame = nil
-    end
+    if self.MobileControlFrame then return end
 
     if UserInputService.TouchEnabled then
         self.MobileControlFrame = Instance.new("Frame")
@@ -255,6 +381,13 @@ function Main:StartFlying()
         self.FlyBV.MaxForce = Vector3.new(0, 0, 0)
         self.FlyBV.Parent = character.HumanoidRootPart
         self.FlyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        local bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bodyGyro.P = 1000
+        bodyGyro.D = 50
+        bodyGyro.Parent = character.HumanoidRootPart
+        self.FlyGyro = bodyGyro
     end
 end
 
@@ -262,6 +395,10 @@ function Main:StopFlying()
     if self.FlyBV then
         self.FlyBV:Destroy()
         self.FlyBV = nil
+    end
+    if self.FlyGyro then
+        self.FlyGyro:Destroy()
+        self.FlyGyro = nil
     end
 end
 
@@ -275,7 +412,7 @@ function Main:FlyToggle()
             self.MobileControlFrame.Visible = true
         end
         self:StartFlying()
-        self.UI:Notify("Flight enabled", "fly")
+        self.UI:Notify("Flight Enabled", "success")
     else
         self.FlyButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
         self.FlyButton.Text = "FLY\nOFF"
@@ -286,15 +423,92 @@ function Main:FlyToggle()
         for control, _ in pairs(self.MobileFlyControls) do
             self.MobileFlyControls[control] = false
         end
-        self.UI:Notify("Flight disabled", "fly")
+        self.UI:Notify("Flight Disabled", "info")
     end
 end
 
-function Main:ExecuteCommand(cmd)
-    if cmd:sub(1, 1) == self.Prefix then
-        cmd = cmd:sub(2)
+function Main:ToggleGodMode(enable)
+    self.GodMode = enable or not self.GodMode
+    
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if self.GodMode then
+                humanoid.Name = "GodModeHumanoid"
+                humanoid.MaxHealth = math.huge
+                humanoid.Health = math.huge
+            else
+                humanoid.MaxHealth = 100
+                humanoid.Health = 100
+            end
+        end
     end
+    
+    self.UI:Notify("God Mode " .. (self.GodMode and "Enabled" or "Disabled"), self.GodMode and "success" or "info")
+end
 
+function Main:ToggleXRay()
+    self.XRay = not self.XRay
+    
+    if self.XRay then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.Transparency < 1 then
+                part.LocalTransparencyModifier = 0.5
+            end
+        end
+        self.UI:Notify("XRay Enabled", "success")
+    else
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
+        end
+        self.UI:Notify("XRay Disabled", "info")
+    end
+end
+
+function Main:ToggleFullbright()
+    self.Fullbright = not self.Fullbright
+    
+    if self.Fullbright then
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+        self.UI:Notify("Fullbright Enabled", "success")
+    else
+        Lighting.Ambient = Color3.new(0, 0, 0)
+        Lighting.Brightness = 1
+        Lighting.GlobalShadows = true
+        self.UI:Notify("Fullbright Disabled", "info")
+    end
+end
+
+function Main:ToggleInfiniteJump()
+    self.InfiniteJump = not self.InfiniteJump
+    self.UI:Notify("Infinite Jump " .. (self.InfiniteJump and "Enabled" or "Disabled"), self.InfiniteJump and "success" or "info")
+end
+
+function Main:ToggleAntiAFK()
+    self.AntiAFK = not self.AntiAFK
+    self.UI:Notify("Anti-AFK " .. (self.AntiAFK and "Enabled" or "Disabled"), self.AntiAFK and "success" or "info")
+end
+
+function Main:ToggleAutoClicker()
+    self.AutoClicker = not self.AutoClicker
+    self.UI:Notify("Auto-Clicker " .. (self.AutoClicker and "Enabled" or "Disabled"), self.AutoClicker and "success" or "info")
+end
+
+function Main:SetTime(time)
+    Lighting.ClockTime = tonumber(time) or 12
+    self.UI:Notify("Time Set: " .. Lighting.ClockTime, "success")
+end
+
+function Main:SetFOV(fov)
+    workspace.CurrentCamera.FieldOfView = tonumber(fov) or 70
+    self.UI:Notify("FOV Set: " .. workspace.CurrentCamera.FieldOfView, "success")
+end
+
+function Main:ExecuteCommand(cmd)
     local args = {}
     for arg in cmd:gmatch("%S+") do
         table.insert(args, arg:lower())
@@ -305,28 +519,36 @@ function Main:ExecuteCommand(cmd)
     local commandName = args[1]
     table.remove(args, 1)
 
-    self.Commands:Execute(commandName, args)
+    local success, result = pcall(function()
+        return self.Commands:Execute(commandName, args)
+    end)
+
+    if not success then
+        self.UI:Notify("Command Error", "error")
+    end
 end
 
 function Main:SetWalkSpeed(speed)
     local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.WalkSpeed = tonumber(speed) or 16
-        self.UI:Notify("WalkSpeed: " .. humanoid.WalkSpeed, "walk")
+        self.Speed = tonumber(speed) or 16
+        humanoid.WalkSpeed = self.Speed
+        self.UI:Notify("Speed: " .. humanoid.WalkSpeed, "success")
     end
 end
 
 function Main:SetJumpPower(power)
     local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.JumpPower = tonumber(power) or 50
-        self.UI:Notify("JumpPower: " .. humanoid.JumpPower, "jump")
+        self.JumpPower = tonumber(power) or 50
+        humanoid.JumpPower = self.JumpPower
+        self.UI:Notify("Jump: " .. humanoid.JumpPower, "success")
     end
 end
 
 function Main:NoClipToggle()
     self.NoClip = not self.NoClip
-    self.UI:Notify("Noclip " .. (self.NoClip and "enabled" or "disabled"), "noclip")
+    self.UI:Notify("Noclip " .. (self.NoClip and "Enabled" or "Disabled"), self.NoClip and "success" or "info")
 end
 
 function Main:WatchPlayer(playerName)
@@ -335,12 +557,12 @@ function Main:WatchPlayer(playerName)
         if target then
             self.Spectating = target
             workspace.CurrentCamera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
-            self.UI:Notify("Watching: " .. target.Name, "watch")
+            self.UI:Notify("Watching: " .. target.Name, "success")
         end
     else
         self.Spectating = nil
         workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        self.UI:Notify("Stopped watching", "watch")
+        self.UI:Notify("Stopped Watching", "info")
     end
 end
 
@@ -348,14 +570,14 @@ function Main:TeleportToPlayer(playerName)
     local target = self:FindPlayer(playerName)
     if target and target.Character and LocalPlayer.Character then
         LocalPlayer.Character:SetPrimaryPartCFrame(target.Character.PrimaryPart.CFrame + Vector3.new(0, 3, 0))
-        self.UI:Notify("Teleported to: " .. target.Name, "teleport")
+        self.UI:Notify("Teleported To: " .. target.Name, "success")
     end
 end
 
 function Main:ResetCharacter()
     if LocalPlayer.Character then
         LocalPlayer.Character:BreakJoints()
-        self.UI:Notify("Character reset", "reset")
+        self.UI:Notify("Character Reset", "success")
     end
 end
 
@@ -363,9 +585,9 @@ function Main:ESPPlayer(playerName)
     local target = self:FindPlayer(playerName)
     if target then
         self:CreateESP(target.Character, target.Name)
-        self.UI:Notify("ESP added for " .. target.Name, "esp")
+        self.UI:Notify("ESP: " .. target.Name, "success")
     else
-        self.UI:Notify("Player not found: " .. playerName, "error")
+        self.UI:Notify("Player Not Found", "error")
     end
 end
 
@@ -376,7 +598,7 @@ function Main:ESPAllPlayers()
         end
     end
     self.ESPEnabled = true
-    self.UI:Notify("ESP added for all players", "esp")
+    self.UI:Notify("ESP All Players", "success")
 end
 
 function Main:ESPAllNPCs()
@@ -386,7 +608,7 @@ function Main:ESPAllNPCs()
         end
     end
     self.NPCESPEnabled = true
-    self.UI:Notify("ESP added for all NPCs", "esp")
+    self.UI:Notify("ESP All NPCs", "success")
 end
 
 function Main:CreateESP(target, name)
@@ -433,7 +655,7 @@ function Main:RemoveESP()
     self.ESPHandles = {}
     self.ESPEnabled = false
     self.NPCESPEnabled = false
-    self.UI:Notify("All ESP removed", "esp")
+    self.UI:Notify("ESP Removed", "success")
 end
 
 function Main:GiveTPTool()
@@ -467,12 +689,12 @@ function Main:GiveTPTool()
         if character and character:FindFirstChild("HumanoidRootPart") then
             local targetPos = handle.Position
             character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-            self.UI:Notify("Teleported!", "teleport")
+            self.UI:Notify("Teleported!", "success")
         end
     end)
     
     tool.Parent = LocalPlayer.Backpack
-    self.UI:Notify("Teleport tool added to backpack!", "teleport")
+    self.UI:Notify("Teleport Tool Added", "success")
 end
 
 function Main:FindPlayer(name)
