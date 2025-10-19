@@ -14,6 +14,9 @@ Main.NoClip = false
 Main.Spectating = nil
 Main.FlyBV = nil
 Main.FlyButton = nil
+Main.ESPEnabled = false
+Main.ESPHandles = {}
+Main.NPCESPEnabled = false
 
 function Main:Init()
     self:LoadUI()
@@ -22,7 +25,6 @@ function Main:Init()
 end
 
 function Main:LoadUI()
-    -- Use the updated UI with hardcoded icons
     self.UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/UI.lua"))()
     self.UI:CreateMainWindow()
 end
@@ -263,6 +265,129 @@ function Main:ResetCharacter()
         LocalPlayer.Character:BreakJoints()
         self.UI:Notify("Character reset", "reset")
     end
+end
+
+function Main:ESPPlayer(playerName)
+    local target = self:FindPlayer(playerName)
+    if target then
+        self:CreateESP(target.Character, target.Name)
+        self.UI:Notify("ESP added for " .. target.Name, "esp")
+    else
+        self.UI:Notify("Player not found: " .. playerName, "error")
+    end
+end
+
+function Main:ESPAllPlayers()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            self:CreateESP(player.Character, player.Name)
+        end
+    end
+    self.ESPEnabled = true
+    self.UI:Notify("ESP added for all players", "esp")
+end
+
+function Main:ESPAllNPCs()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(obj) then
+            self:CreateESP(obj, "NPC: " .. obj.Name)
+        end
+    end
+    self.NPCESPEnabled = true
+    self.UI:Notify("ESP added for all NPCs", "esp")
+end
+
+function Main:CreateESP(target, name)
+    if self.ESPHandles[target] then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "SyntaxESP"
+    highlight.Adornee = target
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = target
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "SyntaxESPLabel"
+    billboard.Adornee = target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart") or target.PrimaryPart
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = target
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextStrokeTransparency = 0
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.Parent = billboard
+
+    self.ESPHandles[target] = {highlight, billboard}
+
+    if target:IsA("Model") then
+        local connection
+        connection = target.ChildAdded:Connect(function(child)
+            if child:IsA("Humanoid") then
+                task.wait(1) 
+                highlight.Adornee = target
+                if target:FindFirstChild("Head") then
+                    billboard.Adornee = target.Head
+                elseif target:FindFirstChild("HumanoidRootPart") then
+                    billboard.Adornee = target.HumanoidRootPart
+                end
+            end
+        end)
+    end
+end
+
+function Main:RemoveESP()
+    for target, handles in pairs(self.ESPHandles) do
+        for _, handle in ipairs(handles) do
+            if handle then
+                handle:Destroy()
+            end
+        end
+    end
+    self.ESPHandles = {}
+    self.ESPEnabled = false
+    self.NPCESPEnabled = false
+    self.UI:Notify("All ESP removed", "esp")
+end
+
+function Main:GiveTPTool()
+    local tool = Instance.new("Tool")
+    tool.Name = "Teleport Tool"
+    tool.RequiresHandle = true
+    
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(1, 1, 1)
+    handle.BrickColor = BrickColor.new("Cyan")
+    handle.Material = Enum.Material.Neon
+    handle.Parent = tool
+    
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = Color3.fromRGB(0, 255, 255)
+    pointLight.Brightness = 2
+    pointLight.Range = 10
+    pointLight.Parent = handle
+    
+    tool.Activated:Connect(function()
+        local character = LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = handle.Position
+            character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+            self.UI:Notify("Teleported!", "teleport")
+        end
+    end)
+    
+    tool.Parent = LocalPlayer.Backpack
+    self.UI:Notify("Teleport tool added to backpack!", "teleport")
 end
 
 function Main:FindPlayer(name)
