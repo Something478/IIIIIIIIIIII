@@ -253,11 +253,6 @@ function Main:CreateMobileFlyToggle()
     btnCorner.CornerRadius = UDim.new(0, 16)
     btnCorner.Parent = self.FlyButton
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 2
-    stroke.Parent = self.FlyButton
-
     local dragging = false
     local dragInput, dragStart, startPos
 
