@@ -22,38 +22,56 @@ function UI:CreateMainWindow()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-    self.MainContainer = Instance.new("Frame")
-    self.MainContainer.Size = UDim2.new(0, 60, 0, 60)
-    self.MainContainer.Position = UDim2.new(0.5, -30, 0, 20)
-    self.MainContainer.BackgroundTransparency = 1
-    self.MainContainer.Parent = self.ScreenGui
-
     self.MainButton = Instance.new("TextButton")
-    self.MainButton.Size = UDim2.new(1, 0, 1, 0)
+    self.MainButton.Size = UDim2.new(0, 50, 0, 50)
+    self.MainButton.Position = UDim2.new(0.5, -25, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
     self.MainButton.Text = "SC"
     self.MainButton.TextColor3 = self.AccentColor
-    self.MainButton.Font = Enum.Font.GothamBlack
-    self.MainButton.TextSize = 20
-    self.MainButton.Parent = self.MainContainer
+    self.MainButton.Font = Enum.Font.GothamBold
+    self.MainButton.TextSize = 18
+    self.MainButton.Parent = self.ScreenGui
 
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(1, 0)
     buttonCorner.Parent = self.MainButton
 
-    local buttonStroke = Instance.new("UIStroke")
-    buttonStroke.Color = self.AccentColor
-    buttonStroke.Thickness = 2
-    buttonStroke.Parent = self.MainButton
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    self.MainButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = self.MainButton.Position
+        end
+    end)
+
+    self.MainButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input == dragInput) then
+            local delta = input.Position - dragStart
+            self.MainButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    self.MainButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 
     self.MainButton.MouseEnter:Connect(function()
         self.MainButton.BackgroundColor3 = self.HoverColor
-        buttonStroke.Thickness = 3
     end)
 
     self.MainButton.MouseLeave:Connect(function()
         self.MainButton.BackgroundColor3 = self.MainColor
-        buttonStroke.Thickness = 2
     end)
 
     self.CommandBar = Instance.new("TextBox")
@@ -64,7 +82,7 @@ function UI:CreateMainWindow()
     self.CommandBar.ClearTextOnFocus = false
     self.CommandBar.TextColor3 = self.TextColor
     self.CommandBar.BackgroundColor3 = self.MainColor
-    self.CommandBar.Font = Enum.Font.FredokaOne
+    self.CommandBar.Font = Enum.Font.Gotham
     self.CommandBar.TextSize = 16
     self.CommandBar.Visible = false
     self.CommandBar.Parent = self.ScreenGui
@@ -72,11 +90,6 @@ function UI:CreateMainWindow()
     local commandCorner = Instance.new("UICorner")
     commandCorner.CornerRadius = UDim.new(0, 12)
     commandCorner.Parent = self.CommandBar
-
-    local commandStroke = Instance.new("UIStroke")
-    commandStroke.Color = self.AccentColor
-    commandStroke.Thickness = 2
-    commandStroke.Parent = self.CommandBar
 
     local padding = Instance.new("UIPadding")
     padding.PaddingLeft = UDim.new(0, 15)
@@ -185,11 +198,6 @@ function UI:CreateAutoComplete()
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = self.AutoCompleteFrame
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = self.AccentColor
-    stroke.Thickness = 1
-    stroke.Parent = self.AutoCompleteFrame
-
     self.AutoCompleteList = Instance.new("UIListLayout")
     self.AutoCompleteList.Padding = UDim.new(0, 2)
     self.AutoCompleteList.Parent = self.AutoCompleteFrame
@@ -215,7 +223,7 @@ function UI:ShowAutoComplete(suggestions)
         button.BackgroundColor3 = self.SecondaryColor
         button.Text = suggestion
         button.TextColor3 = self.TextColor
-        button.Font = Enum.Font.FredokaOne
+        button.Font = Enum.Font.Gotham
         button.TextSize = 14
         button.TextXAlignment = Enum.TextXAlignment.Left
         button.Parent = self.AutoCompleteFrame
@@ -259,18 +267,13 @@ function UI:CreateNotificationFrame()
     UICorner.CornerRadius = UDim.new(0, 15)
     UICorner.Parent = self.NotifFrame
 
-    local UIStroke = Instance.new("UIStroke")
-    UIStroke.Color = self.AccentColor
-    UIStroke.Thickness = 2
-    UIStroke.Parent = self.NotifFrame
-
     self.NotifIcon = Instance.new("TextLabel")
     self.NotifIcon.Size = UDim2.new(0, 40, 0, 40)
     self.NotifIcon.Position = UDim2.new(0, 15, 0.5, -20)
     self.NotifIcon.BackgroundTransparency = 1
     self.NotifIcon.Text = "SC"
     self.NotifIcon.TextColor3 = self.AccentColor
-    self.NotifIcon.Font = Enum.Font.GothamBlack
+    self.NotifIcon.Font = Enum.Font.GothamBold
     self.NotifIcon.TextSize = 18
     self.NotifIcon.Parent = self.NotifFrame
 
@@ -279,7 +282,7 @@ function UI:CreateNotificationFrame()
     self.NotifText.Position = UDim2.new(0, 70, 0, 10)
     self.NotifText.BackgroundTransparency = 1
     self.NotifText.TextColor3 = self.TextColor
-    self.NotifText.Font = Enum.Font.FredokaOne
+    self.NotifText.Font = Enum.Font.Gotham
     self.NotifText.TextSize = 14
     self.NotifText.TextWrapped = true
     self.NotifText.TextXAlignment = Enum.TextXAlignment.Left
