@@ -83,6 +83,38 @@ function Commands:RegisterAll()
                 Main.UI:ShowCommandsList()
             end,
             Description = "Show all available commands"
+        },
+        {
+            Names = {"esp", "playeresp"},
+            Function = function(args)
+                if args[1] then
+                    Main:ESPPlayer(args[1])
+                else
+                    Main:ESPAllPlayers()
+                end
+            end,
+            Description = "ESP a specific player or all players"
+        },
+        {
+            Names = {"npcESP", "espnpc", "npc"},
+            Function = function(args)
+                Main:ESPAllNPCs()
+            end,
+            Description = "ESP all NPCs"
+        },
+        {
+            Names = {"unesp", "removeesp", "clearesp"},
+            Function = function(args)
+                Main:RemoveESP()
+            end,
+            Description = "Remove all ESP"
+        },
+        {
+            Names = {"tptool", "teleporttool", "tpt"},
+            Function = function(args)
+                Main:GiveTPTool()
+            end,
+            Description = "Gives a teleport tool"
         }
     }
 end
@@ -90,8 +122,13 @@ end
 function Commands:Execute(commandName, args)
     for _, cmd in pairs(self.CommandList) do
         for _, name in pairs(cmd.Names) do
-            if name == commandName then
-                cmd.Function(args)
+            if name:lower() == commandName:lower() then
+                local success, errorMsg = pcall(function()
+                    cmd.Function(args)
+                end)
+                if not success then
+                    Main.UI:Notify("Error executing command: " .. errorMsg, "error")
+                end
                 return
             end
         end
