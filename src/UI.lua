@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local IconManager = require(script.Parent.IconManager)
+local IconManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/IconManager.lua"))()
 
 UI.MainColor = Color3.fromRGB(25, 25, 35)
 UI.AccentColor = Color3.fromRGB(0, 170, 255)
@@ -146,8 +146,25 @@ end
 function UI:Notify(message, type)
     self.NotifText.Text = message
 
+    -- Set appropriate icon based on notification type
     if type == "error" then
         self.NotifIcon.Image = IconManager:GetImage("ErrorIcon")
+    elseif type == "fly" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "walk" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "jump" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "noclip" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "watch" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "teleport" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "reset" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    elseif type == "esp" then
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
     else
         self.NotifIcon.Image = IconManager:GetImage("MainIcon")
     end
@@ -171,6 +188,10 @@ function UI:Notify(message, type)
             end)
         end
     end)
+end
+
+function UI:ShowCommandsList()
+    self:Notify("Use ;commands to see available commands", "info")
 end
 
 return UI
