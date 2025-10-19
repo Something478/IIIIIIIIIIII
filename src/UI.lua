@@ -3,6 +3,8 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local IconManager = require(script.Parent.IconManager)
+
 UI.MainColor = Color3.fromRGB(25, 25, 35)
 UI.AccentColor = Color3.fromRGB(0, 170, 255)
 UI.TextColor = Color3.fromRGB(255, 255, 255)
@@ -15,14 +17,12 @@ function UI:CreateMainWindow()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-    self.MainButton = Instance.new("TextButton")
+    self.MainButton = Instance.new("ImageButton")
     self.MainButton.Size = UDim2.new(0, 60, 0, 60)
     self.MainButton.Position = UDim2.new(0.5, -30, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Text = "SC"
-    self.MainButton.TextColor3 = self.TextColor
-    self.MainButton.TextScaled = true
-    self.MainButton.Font = Enum.Font.FredokaOne
+    self.MainButton.Image = IconManager:GetImage("MainIcon")
+    self.MainButton.ScaleType = Enum.ScaleType.Fit
     self.MainButton.Parent = self.ScreenGui
 
     local buttonCorner = Instance.new("UICorner")
@@ -122,15 +122,12 @@ function UI:CreateNotificationFrame()
     UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = self.NotifFrame
 
-    self.NotifIcon = Instance.new("TextLabel")
+    self.NotifIcon = Instance.new("ImageLabel")
     self.NotifIcon.Size = UDim2.new(0, 35, 0, 35)
     self.NotifIcon.Position = UDim2.new(0, 15, 0.5, -17.5)
     self.NotifIcon.BackgroundTransparency = 1
-    self.NotifIcon.Text = "SC"
-    self.NotifIcon.TextColor3 = self.AccentColor
-    self.NotifIcon.Font = Enum.Font.FredokaOne
-    self.NotifIcon.TextSize = 20
-    self.NotifIcon.TextScaled = true
+    self.NotifIcon.Image = IconManager:GetImage("MainIcon")
+    self.NotifIcon.ScaleType = Enum.ScaleType.Fit
     self.NotifIcon.Parent = self.NotifFrame
 
     self.NotifText = Instance.new("TextLabel")
@@ -150,11 +147,9 @@ function UI:Notify(message, type)
     self.NotifText.Text = message
 
     if type == "error" then
-        self.NotifIcon.Text = "❌"
-        self.NotifIcon.TextColor3 = Color3.fromRGB(255, 80, 80)
+        self.NotifIcon.Image = IconManager:GetImage("ErrorIcon")
     else
-        self.NotifIcon.Text = "SC"
-        self.NotifIcon.TextColor3 = self.AccentColor
+        self.NotifIcon.Image = IconManager:GetImage("MainIcon")
     end
 
     self.NotifFrame.Visible = true
