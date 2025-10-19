@@ -73,6 +73,7 @@ function UI:CreateMainWindow()
     end)
 
     self:CreateNotificationFrame()
+    self:CreateCommandsList()
 end
 
 function UI:ToggleCommandBar()
@@ -143,10 +144,152 @@ function UI:CreateNotificationFrame()
     self.NotifText.Parent = self.NotifFrame
 end
 
+function UI:CreateCommandsList()
+    self.CommandsFrame = Instance.new("Frame")
+    self.CommandsFrame.Size = UDim2.new(0, 500, 0, 400)
+    self.CommandsFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    self.CommandsFrame.BackgroundColor3 = self.MainColor
+    self.CommandsFrame.BackgroundTransparency = 0.1
+    self.CommandsFrame.Visible = false
+    self.CommandsFrame.Parent = self.ScreenGui
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.Parent = self.CommandsFrame
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = self.AccentColor
+    UIStroke.Thickness = 2
+    UIStroke.Parent = self.CommandsFrame
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "SYNTAX COMMANDS"
+    title.TextColor3 = self.AccentColor
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 24
+    title.TextStrokeTransparency = 0.8
+    title.Parent = self.CommandsFrame
+
+    self.CloseButton = Instance.new("TextButton")
+    self.CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    self.CloseButton.Position = UDim2.new(1, -35, 0, 10)
+    self.CloseButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+    self.CloseButton.Text = "X"
+    self.CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.CloseButton.Font = Enum.Font.GothamBold
+    self.CloseButton.TextSize = 16
+    self.CloseButton.Parent = self.CommandsFrame
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = self.CloseButton
+
+    self.CloseButton.MouseButton1Click:Connect(function()
+        self:HideCommandsList()
+    end)
+
+    self.ScrollingFrame = Instance.new("ScrollingFrame")
+    self.ScrollingFrame.Size = UDim2.new(1, -20, 1, -70)
+    self.ScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
+    self.ScrollingFrame.BackgroundTransparency = 1
+    self.ScrollingFrame.BorderSizePixel = 0
+    self.ScrollingFrame.ScrollBarThickness = 6
+    self.ScrollingFrame.ScrollBarImageColor3 = self.AccentColor
+    self.ScrollingFrame.Parent = self.CommandsFrame
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 8)
+    UIListLayout.Parent = self.ScrollingFrame
+
+    self.CloseButton.MouseEnter:Connect(function()
+        self.CloseButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    end)
+
+    self.CloseButton.MouseLeave:Connect(function()
+        self.CloseButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+    end)
+end
+
+function UI:ShowCommandsList()
+    for _, child in ipairs(self.ScrollingFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+
+    local commands = getgenv().Syntax.Commands.CommandList
+
+    local ySize = 0
+    for i, cmd in ipairs(commands) do
+        local commandFrame = Instance.new("Frame")
+        commandFrame.Size = UDim2.new(1, 0, 0, 60)
+        commandFrame.BackgroundColor3 = self.SecondaryColor
+        commandFrame.Parent = self.ScrollingFrame
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = commandFrame
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = self.HoverColor
+        stroke.Thickness = 1
+        stroke.Parent = commandFrame
+
+        local namesLabel = Instance.new("TextLabel")
+        namesLabel.Size = UDim2.new(0.6, -10, 0, 30)
+        namesLabel.Position = UDim2.new(0, 10, 0, 5)
+        namesLabel.BackgroundTransparency = 1
+        namesLabel.Text = "Commands: " .. table.concat(cmd.Names, ", ")
+        namesLabel.TextColor3 = self.AccentColor
+        namesLabel.Font = Enum.Font.GothamBold
+        namesLabel.TextSize = 14
+        namesLabel.TextXAlignment = Enum.TextXAlignment.Left
+        namesLabel.TextStrokeTransparency = 0.8
+        namesLabel.Parent = commandFrame
+
+        local descLabel = Instance.new("TextLabel")
+        descLabel.Size = UDim2.new(1, -20, 0, 20)
+        descLabel.Position = UDim2.new(0, 10, 0, 35)
+        descLabel.BackgroundTransparency = 1
+        descLabel.Text = "Description: " .. cmd.Description
+        descLabel.TextColor3 = self.TextColor
+        descLabel.Font = Enum.Font.Gotham
+        descLabel.TextSize = 12
+        descLabel.TextXAlignment = Enum.TextXAlignment.Left
+        descLabel.TextWrapped = true
+        descLabel.Parent = commandFrame
+
+        ySize = ySize + 68
+    end
+
+    self.ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, ySize)
+
+    self.CommandsFrame.Visible = true
+    self.CommandsFrame.Position = UDim2.new(0.5, -250, 0.5, 450)
+
+    local slideIn = TweenService:Create(self.CommandsFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -250, 0.5, -200)
+    })
+    slideIn:Play()
+end
+
+function UI:HideCommandsList()
+    local slideOut = TweenService:Create(self.CommandsFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Position = UDim2.new(0.5, -250, 0.5, 450)
+    })
+    slideOut:Play()
+
+    slideOut.Completed:Connect(function()
+        self.CommandsFrame.Visible = false
+    end)
+end
+
 function UI:Notify(message, type)
     self.NotifText.Text = message
 
-    -- Set appropriate icon based on notification type
     if type == "error" then
         self.NotifIcon.Image = IconManager:GetImage("ErrorIcon")
     elseif type == "fly" then
@@ -188,11 +331,6 @@ function UI:Notify(message, type)
             end)
         end
     end)
-end
-
-
-function UI:ShowCommandsList()
-    self:Notify("Use ;commands to see available commands", "info")
 end
 
 return UI
