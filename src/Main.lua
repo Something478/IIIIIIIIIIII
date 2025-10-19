@@ -32,17 +32,11 @@ Main.Connections = {}
 
 function Main:Init()
     getgenv().Syntax = self
-    
     self:LoadUI()
     self:LoadCommands()
     self:SetupConnections()
-    
     self:CreateMobileFlyToggle()
-    if self.FlyButton then
-        self.FlyButton.Visible = false
-    end
-    
-    self.UI:Notify("Syntax Commands v" .. self.Version .. " loaded! Use " .. self.Prefix .. "commands", "info")
+    self.UI:Notify("Syntax Commands loaded! Use " .. self.Prefix .. "commands", "info")
 end
 
 function Main:LoadUI()
@@ -94,12 +88,10 @@ function Main:SetupConnections()
 
     self.Connections.characterAdded = LocalPlayer.CharacterAdded:Connect(function(character)
         character:WaitForChild("HumanoidRootPart")
-        
         if self.Flying then
-            task.wait(1)
+            wait(1)
             self:StartFlying()
         end
-        
         if self.NoClip then
             self.UI:Notify("Noclip re-enabled after reset", "noclip")
         end
@@ -109,35 +101,11 @@ function Main:SetupConnections()
 end
 
 function Main:SetupChatListener()
-    if TextChatService then
-        local function onIncomingMessage(message)
-            if message.TextSource then
-                local text = message.Text
-                if text:sub(1, 1) == self.Prefix then
-                    self:ExecuteCommand(text)
-                    return false
-                end
-            end
-        end
-
-        if TextChatService.OnIncomingMessage then
-            self.Connections.chatMessage = TextChatService.OnIncomingMessage:Connect(onIncomingMessage)
-        end
-    end
-
     self.Connections.chatHook = LocalPlayer.Chatted:Connect(function(message)
         if message:sub(1, 1) == self.Prefix then
             self:ExecuteCommand(message)
         end
     end)
-
-    self.Connections.playerChat = game:GetService("Players").PlayerChatted:Connect(function(chatType, player, message)
-        if player == LocalPlayer and message:sub(1, 1) == self.Prefix then
-            self:ExecuteCommand(message)
-        end
-    end)
-
-    self.UI:Notify("Chat commands enabled! Use " .. self.Prefix .. " before commands", "info")
 end
 
 function Main:CreateMobileFlyToggle()
@@ -146,45 +114,21 @@ function Main:CreateMobileFlyToggle()
         self.FlyButton = nil
     end
 
-    self.FlyButton = Instance.new("Frame")
+    self.FlyButton = Instance.new("TextButton")
     self.FlyButton.Size = UDim2.new(0, 80, 0, 80)
     self.FlyButton.Position = UDim2.new(0, 30, 0.5, -40)
-    self.FlyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    self.FlyButton.BackgroundTransparency = 0.1
-    self.FlyButton.Visible = false
+    self.FlyButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+    self.FlyButton.Text = "FLY\nOFF"
+    self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.FlyButton.Font = Enum.Font.GothamBlack
+    self.FlyButton.TextSize = 16
+    self.FlyButton.TextWrapped = true
+    self.FlyButton.ZIndex = 100
     self.FlyButton.Parent = self.UI.ScreenGui
 
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 16)
-    UICorner.Parent = self.FlyButton
-
-    local flyBtn = Instance.new("TextButton")
-    flyBtn.Size = UDim2.new(1, -10, 1, -10)
-    flyBtn.Position = UDim2.new(0, 5, 0, 5)
-    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    flyBtn.Text = "FLY\nOFF"
-    flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    flyBtn.Font = Enum.Font.GothamBlack
-    flyBtn.TextSize = 16
-    flyBtn.TextWrapped = true
-    flyBtn.ZIndex = 100
-    flyBtn.Parent = self.FlyButton
-
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 12)
-    btnCorner.Parent = flyBtn
-
-    flyBtn.MouseEnter:Connect(function()
-        flyBtn.BackgroundColor3 = Color3.fromRGB(220, 100, 100)
-    end)
-
-    flyBtn.MouseLeave:Connect(function()
-        if self.Flying then
-            flyBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
-        else
-            flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-        end
-    end)
+    btnCorner.CornerRadius = UDim.new(0, 16)
+    btnCorner.Parent = self.FlyButton
 
     local dragging = false
     local dragInput, dragStart, startPos
@@ -194,7 +138,6 @@ function Main:CreateMobileFlyToggle()
             dragging = true
             dragStart = input.Position
             startPos = self.FlyButton.Position
-
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -216,7 +159,7 @@ function Main:CreateMobileFlyToggle()
         end
     end)
 
-    flyBtn.MouseButton1Click:Connect(function()
+    self.FlyButton.MouseButton1Click:Connect(function()
         self:FlyToggle()
     end)
 
@@ -251,26 +194,18 @@ function Main:CreateMobileFlyControls()
         local wBtn = self:CreateMobileButton("W", UDim2.new(0.5, -25, 0, 10), movementPad)
         wBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.W = true end)
         wBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.W = false end)
-        wBtn.TouchLongPress:Connect(function() self.MobileFlyControls.W = true end)
-        wBtn.TouchEnded:Connect(function() self.MobileFlyControls.W = false end)
 
         local aBtn = self:CreateMobileButton("A", UDim2.new(0, 10, 0.5, -25), movementPad)
         aBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.A = true end)
         aBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.A = false end)
-        aBtn.TouchLongPress:Connect(function() self.MobileFlyControls.A = true end)
-        aBtn.TouchEnded:Connect(function() self.MobileFlyControls.A = false end)
 
         local sBtn = self:CreateMobileButton("S", UDim2.new(0.5, -25, 1, -60), movementPad)
         sBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.S = true end)
         sBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.S = false end)
-        sBtn.TouchLongPress:Connect(function() self.MobileFlyControls.S = true end)
-        sBtn.TouchEnded:Connect(function() self.MobileFlyControls.S = false end)
 
         local dBtn = self:CreateMobileButton("D", UDim2.new(1, -60, 0.5, -25), movementPad)
         dBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.D = true end)
         dBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.D = false end)
-        dBtn.TouchLongPress:Connect(function() self.MobileFlyControls.D = true end)
-        dBtn.TouchEnded:Connect(function() self.MobileFlyControls.D = false end)
 
         local verticalFrame = Instance.new("Frame")
         verticalFrame.Size = UDim2.new(0, 60, 0, 150)
@@ -281,14 +216,10 @@ function Main:CreateMobileFlyControls()
         local spaceBtn = self:CreateMobileButton("↑", UDim2.new(0, 0, 0, 10), verticalFrame)
         spaceBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.Space = true end)
         spaceBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.Space = false end)
-        spaceBtn.TouchLongPress:Connect(function() self.MobileFlyControls.Space = true end)
-        spaceBtn.TouchEnded:Connect(function() self.MobileFlyControls.Space = false end)
 
         local shiftBtn = self:CreateMobileButton("↓", UDim2.new(0, 0, 1, -60), verticalFrame)
         shiftBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.Shift = true end)
         shiftBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.Shift = false end)
-        shiftBtn.TouchLongPress:Connect(function() self.MobileFlyControls.Shift = true end)
-        shiftBtn.TouchEnded:Connect(function() self.MobileFlyControls.Shift = false end)
     end
 end
 
@@ -307,14 +238,6 @@ function Main:CreateMobileButton(text, position, parent)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = button
-
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-    end)
-
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    end)
 
     return button
 end
@@ -346,40 +269,23 @@ function Main:FlyToggle()
     self.Flying = not self.Flying
 
     if self.Flying then
-        if self.FlyButton then
-            self.FlyButton.Visible = true
-            local flyBtn = self.FlyButton:FindFirstChildOfClass("TextButton")
-            if flyBtn then
-                flyBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
-                flyBtn.Text = "FLY\nON"
-            end
-        end
-        
+        self.FlyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+        self.FlyButton.Text = "FLY\nON"
         if self.MobileControlFrame then
             self.MobileControlFrame.Visible = true
         end
-        
         self:StartFlying()
         self.UI:Notify("Flight enabled", "fly")
     else
+        self.FlyButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        self.FlyButton.Text = "FLY\nOFF"
         if self.MobileControlFrame then
             self.MobileControlFrame.Visible = false
         end
-        
-        if self.FlyButton then
-            local flyBtn = self.FlyButton:FindFirstChildOfClass("TextButton")
-            if flyBtn then
-                flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-                flyBtn.Text = "FLY\nOFF"
-            end
-        end
-        
         self:StopFlying()
-        
         for control, _ in pairs(self.MobileFlyControls) do
             self.MobileFlyControls[control] = false
         end
-        
         self.UI:Notify("Flight disabled", "fly")
     end
 end
@@ -514,21 +420,6 @@ function Main:CreateESP(target, name)
     label.Parent = billboard
 
     self.ESPHandles[target] = {highlight, billboard}
-
-    if target:IsA("Model") then
-        local connection
-        connection = target.ChildAdded:Connect(function(child)
-            if child:IsA("Humanoid") then
-                task.wait(1) 
-                highlight.Adornee = target
-                if target:FindFirstChild("Head") then
-                    billboard.Adornee = target.Head
-                elseif target:FindFirstChild("HumanoidRootPart") then
-                    billboard.Adornee = target.HumanoidRootPart
-                end
-            end
-        end)
-    end
 end
 
 function Main:RemoveESP()
@@ -595,5 +486,4 @@ function Main:FindPlayer(name)
 end
 
 Main:Init()
-
 return Main
