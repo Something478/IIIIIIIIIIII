@@ -190,6 +190,7 @@ function UI:Notify(message, type)
     end)
 end
 
+
 function UI:ShowCommandsList()
     self:Notify("Use ;commands to see available commands", "info")
 end
