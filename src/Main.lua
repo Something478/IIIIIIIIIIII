@@ -49,8 +49,6 @@ function Main:Init()
     self:LoadUI()
     self:LoadCommands()
     self:SetupConnections()
-    self:CreateFlyButton()
-    self:CreateWASDController()
     self:CreateQuickAccessPanel()
     self:SetupAntiKick()
     self.UI:Notify("Syntax Commands " .. self.Version .. " Loaded!", "success")
@@ -90,6 +88,8 @@ function Main:SetupAntiKick()
 end
 
 function Main:CreateFlyButton()
+    if self.FlyButton then return end
+    
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -104,6 +104,7 @@ function Main:CreateFlyButton()
     self.FlyButton.Size = UDim2.new(0.06495, 0, 0.15279, 0)
     self.FlyButton.Text = "Fly"
     self.FlyButton.Position = UDim2.new(0.46667, 0, 0.31124, 0)
+    self.FlyButton.Visible = false
     self.FlyButton.Parent = ScreenGui
 
     local UICorner = Instance.new("UICorner")
@@ -148,6 +149,8 @@ function Main:CreateFlyButton()
 end
 
 function Main:CreateWASDController()
+    if self.WASDFrame then return end
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -291,6 +294,19 @@ function Main:FlyToggle()
     self.Flying = not self.Flying
 
     if self.Flying then
+        -- Create buttons if they don't exist
+        if not self.FlyButton then
+            self:CreateFlyButton()
+        end
+        if not self.WASDFrame then
+            self:CreateWASDController()
+        end
+        
+        -- Show buttons
+        self.FlyButton.Visible = true
+        self.WASDFrame.Visible = true
+        
+        -- Animate to green
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local tween = TweenService:Create(self.FlyButton, tweenInfo, {
             BackgroundColor3 = Color3.fromRGB(0, 255, 0),
@@ -298,13 +314,10 @@ function Main:FlyToggle()
         })
         tween:Play()
         
-        if self.WASDFrame then
-            self.WASDFrame.Visible = true
-        end
-        
         self:StartFlying()
         self.UI:Notify("Flight Enabled", "success")
     else
+        -- Animate back to black
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local tween = TweenService:Create(self.FlyButton, tweenInfo, {
             BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -312,6 +325,10 @@ function Main:FlyToggle()
         })
         tween:Play()
         
+        -- Hide buttons
+        if self.FlyButton then
+            self.FlyButton.Visible = false
+        end
         if self.WASDFrame then
             self.WASDFrame.Visible = false
         end
@@ -322,6 +339,11 @@ function Main:FlyToggle()
         end
         self.UI:Notify("Flight Disabled", "info")
     end
+end
+
+function Main:SetFlySpeed(speed)
+    self.FlySpeed = tonumber(speed) or 50
+    self.UI:Notify("Fly Speed: " .. self.FlySpeed, "success")
 end
 
 function Main:StartFlying()
@@ -536,6 +558,22 @@ function Main:Rejoin()
 end
 
 function Main:RejoinRefresh()
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    local savedPosition = humanoidRootPart and humanoidRootPart.CFrame
+    
+    if savedPosition then
+        -- Save position to data store for persistence
+        local success = pcall(function()
+            local dataStore = game:GetService("DataStoreService"):GetDataStore("SyntaxPositionSave")
+            dataStore:SetAsync(LocalPlayer.UserId .. "_position", {
+                X = savedPosition.X,
+                Y = savedPosition.Y, 
+                Z = savedPosition.Z
+            })
+        end)
+    end
+    
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end
 
@@ -975,7 +1013,7 @@ function Main:ShowCommandsList()
     scrollFrame.Parent = self.CommandsWindow
 
     local commandsList = {
-        {"fly", "Toggle flight mode"},
+        {"fly [speed]", "Toggle flight with optional speed"},
         {"noclip", "Toggle noclip through walls"},
         {"godmode", "Toggle invincibility"},
         {"speed [number]", "Set walk speed (default 16)"},
@@ -994,7 +1032,6 @@ function Main:ShowCommandsList()
         {"fov [number]", "Set camera FOV"},
         {"xray", "Toggle x-ray vision"},
         {"fullbright", "Toggle fullbright lighting"},
-        {"flyspeed [number]", "Set flight speed"},
         {"rejoin/rj", "Rejoin the game"},
         {"rejoinrefresh/rjre", "Rejoin to same position"},
         {"exit", "Leave the game"},
