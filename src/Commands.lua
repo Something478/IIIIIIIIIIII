@@ -6,9 +6,12 @@ function Commands:RegisterAll()
         {
             Names = {"fly", "flight"},
             Function = function(args)
+                if args[1] then
+                    Main:SetFlySpeed(args[1])
+                end
                 Main:FlyToggle()
             end,
-            Description = "Toggle flight mode"
+            Description = "Toggle flight with optional speed"
         },
         {
             Names = {"unfly", "ground"},
@@ -222,14 +225,6 @@ function Commands:RegisterAll()
                 Main:SetFOV(args[1])
             end,
             Description = "Set camera FOV"
-        },
-        {
-            Names = {"flyspeed", "fs"},
-            Function = function(args)
-                Main.FlySpeed = tonumber(args[1]) or 50
-                Main.UI:Notify("Fly speed: " .. Main.FlySpeed, "success")
-            end,
-            Description = "Set flight speed"
         }
     }
 end
