@@ -80,7 +80,7 @@ function Commands:RegisterAll()
         {
             Names = {"commands", "cmds", "help"},
             Function = function(args)
-                Main.UI:ShowCommandsList()
+                Main:ShowCommandsList()
             end,
             Description = "Show all available commands"
         },
@@ -115,6 +115,121 @@ function Commands:RegisterAll()
                 Main:GiveTPTool()
             end,
             Description = "Gives a teleport tool"
+        },
+        {
+            Names = {"rejoin", "rj"},
+            Function = function(args)
+                Main:Rejoin()
+            end,
+            Description = "Rejoin the game"
+        },
+        {
+            Names = {"rejoinrefresh", "rjre"},
+            Function = function(args)
+                Main:RejoinRefresh()
+            end,
+            Description = "Rejoin to same position"
+        },
+        {
+            Names = {"exit", "leave"},
+            Function = function(args)
+                Main:ExitGame()
+            end,
+            Description = "Leave the game"
+        },
+        {
+            Names = {"serverhop", "shop"},
+            Function = function(args)
+                Main:ServerHop()
+            end,
+            Description = "Hop to a random server"
+        },
+        {
+            Names = {"pingserverhop", "pshop"},
+            Function = function(args)
+                Main:PingServerHop()
+            end,
+            Description = "Hop to best ping server"
+        },
+        {
+            Names = {"antifling", "af"},
+            Function = function(args)
+                Main:ToggleAntiFling()
+            end,
+            Description = "Toggle anti-fling"
+        },
+        {
+            Names = {"unantifling", "uaf"},
+            Function = function(args)
+                if Main.AntiFling then
+                    Main:ToggleAntiFling()
+                end
+            end,
+            Description = "Disable anti-fling"
+        },
+        {
+            Names = {"antikick", "ak"},
+            Function = function(args)
+                Main:ToggleAntiKick()
+            end,
+            Description = "Toggle anti-kick"
+        },
+        {
+            Names = {"fullbright", "fb"},
+            Function = function(args)
+                Main:ToggleFullbright()
+            end,
+            Description = "Toggle fullbright"
+        },
+        {
+            Names = {"xray", "xrayvision"},
+            Function = function(args)
+                Main:ToggleXRay()
+            end,
+            Description = "Toggle xray vision"
+        },
+        {
+            Names = {"infinitejump", "ij"},
+            Function = function(args)
+                Main:ToggleInfiniteJump()
+            end,
+            Description = "Toggle infinite jump"
+        },
+        {
+            Names = {"antiafk", "aafk"},
+            Function = function(args)
+                Main:ToggleAntiAFK()
+            end,
+            Description = "Toggle anti-afk"
+        },
+        {
+            Names = {"autoclick", "ac"},
+            Function = function(args)
+                Main:ToggleAutoClicker()
+            end,
+            Description = "Toggle auto-clicker"
+        },
+        {
+            Names = {"time", "settime"},
+            Function = function(args)
+                Main:SetTime(args[1])
+            end,
+            Description = "Set game time"
+        },
+        {
+            Names = {"fov", "setfov"},
+            Function = function(args)
+                Main:SetFOV(args[1])
+            end,
+            Description = "Set camera FOV"
+        },
+        {
+            Names = {"flyspeed", "fs"},
+            Function = function(args)
+                Main.FlySpeed = tonumber(args[1]) or 50
+                Main.UI:Notify("Fly speed: " .. Main.FlySpeed, "success")
+            end,
+            Description = "Set flight speed"
         }
     }
 end
