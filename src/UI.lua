@@ -215,7 +215,7 @@ function UI:ShowCommandBar()
     self.CommandBar.Text = ""
 
     local slideIn = TweenService:Create(self.CommandBar, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -225, 0, 80)
+        Position = UDim2.new(0.5, -225, 0, 80) 
     })
     slideIn:Play()
 
