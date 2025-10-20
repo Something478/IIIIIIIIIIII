@@ -15,6 +15,40 @@ UI.WarningColor = Color3.fromRGB(255, 200, 0)
 
 UI.CommandHistory = {}
 UI.CurrentHistoryIndex = 0
+UI.CommandSuggestions = {
+    "fly - Toggle flight mode",
+    "unfly - Disable flight", 
+    "noclip (nc) - Toggle noclip",
+    "clip - Disable noclip",
+    "godmode - Toggle invincibility",
+    "speed [num] - Set walk speed",
+    "jump [num] - Set jump power",
+    "esp [player] - ESP player",
+    "espall - ESP all players",
+    "espnpc - ESP NPCs",
+    "removeesp - Remove all ESP",
+    "watch [player] - Spectate player",
+    "unwatch - Stop spectating",
+    "tp [player] - Teleport to player",
+    "reset (re) - Reset character",
+    "infinitejump (ij) - Toggle infinite jump",
+    "antiafk (aafk) - Toggle anti-afk",
+    "autoclick (ac) - Toggle auto-clicker",
+    "time [num] - Set game time",
+    "fov [num] - Set camera FOV",
+    "xray - Toggle xray vision",
+    "fullbright (fb) - Toggle fullbright",
+    "flyspeed [num] - Set flight speed",
+    "rejoin (rj) - Rejoin game",
+    "rejoinrefresh (rjre) - Rejoin same position",
+    "exit - Leave game",
+    "serverhop (shop) - Hop to random server",
+    "pingserverhop (pshop) - Hop to best ping server",
+    "antifling (af) - Toggle anti-fling",
+    "unantifling (uaf) - Disable anti-fling",
+    "antikick (ak) - Toggle anti-kick",
+    "commands (cmds) - Show commands list"
+}
 
 function UI:CreateMainWindow()
     self.ScreenGui = Instance.new("ScreenGui")
@@ -116,6 +150,7 @@ function UI:CreateMainWindow()
 
     self.CommandBar:GetPropertyChangedSignal("Text"):Connect(function()
         self.CommandBar.Text = self.CommandBar.Text:sub(1, 100)
+        self:UpdateAutoComplete()
     end)
 
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -134,6 +169,23 @@ function UI:CreateMainWindow()
 
     self:CreateNotificationFrame()
     self:CreateAutoComplete()
+end
+
+function UI:UpdateAutoComplete()
+    local searchText = self.CommandBar.Text:lower()
+    if searchText == "" then
+        self:HideAutoComplete()
+        return
+    end
+
+    local matches = {}
+    for _, suggestion in ipairs(self.CommandSuggestions) do
+        if suggestion:lower():find(searchText, 1, true) then
+            table.insert(matches, suggestion)
+        end
+    end
+
+    self:ShowAutoComplete(matches)
 end
 
 function UI:NavigateHistory(direction)
@@ -163,7 +215,7 @@ function UI:ShowCommandBar()
     self.CommandBar.Text = ""
 
     local slideIn = TweenService:Create(self.CommandBar, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -225, 0, 25)
+        Position = UDim2.new(0.5, -225, 0, 80)
     })
     slideIn:Play()
 
@@ -189,14 +241,20 @@ end
 function UI:CreateAutoComplete()
     self.AutoCompleteFrame = Instance.new("Frame")
     self.AutoCompleteFrame.Size = UDim2.new(0, 450, 0, 0)
-    self.AutoCompleteFrame.Position = UDim2.new(0.5, -225, 0, 80)
+    self.AutoCompleteFrame.Position = UDim2.new(0.5, -225, 0, 135)
     self.AutoCompleteFrame.BackgroundColor3 = self.SecondaryColor
+    self.AutoCompleteFrame.BackgroundTransparency = 0.1
     self.AutoCompleteFrame.Visible = false
     self.AutoCompleteFrame.Parent = self.ScreenGui
 
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = self.AutoCompleteFrame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = self.AccentColor
+    stroke.Thickness = 1
+    stroke.Parent = self.AutoCompleteFrame
 
     self.AutoCompleteList = Instance.new("UIListLayout")
     self.AutoCompleteList.Padding = UDim.new(0, 2)
@@ -216,11 +274,12 @@ function UI:ShowAutoComplete(suggestions)
     end
 
     for i, suggestion in ipairs(suggestions) do
-        if i > 5 then break end
+        if i > 3 then break end
         
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, 0, 0, 30)
+        button.Size = UDim2.new(1, 0, 0, 35)
         button.BackgroundColor3 = self.SecondaryColor
+        button.BackgroundTransparency = 0.1
         button.Text = suggestion
         button.TextColor3 = self.TextColor
         button.Font = Enum.Font.Gotham
@@ -229,8 +288,12 @@ function UI:ShowAutoComplete(suggestions)
         button.Parent = self.AutoCompleteFrame
 
         local padding = Instance.new("UIPadding")
-        padding.PaddingLeft = UDim.new(0, 10)
+        padding.PaddingLeft = UDim.new(0, 15)
         padding.Parent = button
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = button
 
         button.MouseEnter:Connect(function()
             button.BackgroundColor3 = self.HoverColor
@@ -241,12 +304,13 @@ function UI:ShowAutoComplete(suggestions)
         end)
 
         button.MouseButton1Click:Connect(function()
-            self.CommandBar.Text = suggestion
+            local command = suggestion:match("^([^%s]+)")
+            self.CommandBar.Text = command or suggestion
             self.CommandBar:CaptureFocus()
         end)
     end
 
-    self.AutoCompleteFrame.Size = UDim2.new(0, 450, 0, math.min(#suggestions, 5) * 32 - 2)
+    self.AutoCompleteFrame.Size = UDim2.new(0, 450, 0, math.min(#suggestions, 3) * 37 - 2)
     self.AutoCompleteFrame.Visible = true
 end
 
