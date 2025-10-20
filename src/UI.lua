@@ -60,7 +60,7 @@ function UI:CreateMainWindow()
     self.MainButton.Size = UDim2.new(0, 50, 0, 50)
     self.MainButton.Position = UDim2.new(0.5, -25, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Text = "SC"
+    self.MainButton.Text = "𝐒𝐂"
     self.MainButton.TextColor3 = self.AccentColor
     self.MainButton.Font = Enum.Font.GothamBold
     self.MainButton.TextSize = 18
