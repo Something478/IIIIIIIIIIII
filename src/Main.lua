@@ -1,5 +1,5 @@
 local Main = {}
-Main.Version = "1.2"
+Main.Version = "1.3"
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,6 +8,9 @@ local TweenService = game:GetService("TweenService")
 local TextChatService = game:GetService("TextChatService")
 local StarterGui = game:GetService("StarterGui")
 local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -29,14 +32,14 @@ Main.InfiniteJump = false
 Main.XRay = false
 Main.Fullbright = false
 Main.FlySpeed = 50
+Main.AntiFling = false
+Main.AntiKick = false
 
 Main.MobileFlyControls = {
     W = false,
     A = false,
     S = false,
-    D = false,
-    Space = false,
-    Shift = false
+    D = false
 }
 
 Main.Connections = {}
@@ -46,8 +49,10 @@ function Main:Init()
     self:LoadUI()
     self:LoadCommands()
     self:SetupConnections()
-    self:CreateMobileFlyToggle()
+    self:CreateFlyButton()
+    self:CreateWASDController()
     self:CreateQuickAccessPanel()
+    self:SetupAntiKick()
     self.UI:Notify("Syntax Commands " .. self.Version .. " Loaded!", "success")
 end
 
@@ -61,83 +66,296 @@ function Main:LoadCommands()
     self.Commands:RegisterAll()
 end
 
-function Main:SetupConnections()
-    self.Connections.commandBar = self.UI.CommandBar.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            local command = self.UI.CommandBar.Text
-            if command ~= "" then
-                self:ExecuteCommand(command)
-                self.UI.CommandBar.Text = ""
+function Main:SetupAntiKick()
+    if self.AntiKick then
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        
+        setreadonly(mt, false)
+        
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if self == LocalPlayer and method == "Kick" and self.AntiKick then
+                self.UI:Notify("Blocked kick attempt!", "warning")
+                return nil
             end
+            
+            return oldNamecall(self, ...)
+        end)
+        
+        setreadonly(mt, true)
+    end
+end
+
+function Main:CreateFlyButton()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    CollectionService:AddTag(ScreenGui, "main")
+
+    self.FlyButton = Instance.new("TextButton")
+    self.FlyButton.TextWrapped = true
+    self.FlyButton.BorderSizePixel = 0
+    self.FlyButton.TextScaled = true
+    self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    self.FlyButton.Size = UDim2.new(0.06495, 0, 0.15279, 0)
+    self.FlyButton.Text = "Fly"
+    self.FlyButton.Position = UDim2.new(0.46667, 0, 0.31124, 0)
+    self.FlyButton.Parent = ScreenGui
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.Parent = self.FlyButton
+
+    local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
+    UIAspectRatioConstraint.Parent = self.FlyButton
+
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    self.FlyButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = self.FlyButton.Position
         end
     end)
 
-    self.Connections.stepped = RunService.Stepped:Connect(function()
-        if self.NoClip and LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
+    self.FlyButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
         end
     end)
 
-    self.Connections.heartbeat = RunService.Heartbeat:Connect(function()
-        if self.Flying and self.FlyBV then
-            local cam = workspace.CurrentCamera
-            self.FlyBV.Velocity = Vector3.new()
-
-            if UserInputService:GetFocusedTextBox() then return end
-
-            local moveDir = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) or self.MobileFlyControls.W then moveDir = moveDir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) or self.MobileFlyControls.S then moveDir = moveDir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) or self.MobileFlyControls.D then moveDir = moveDir + cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) or self.MobileFlyControls.A then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or self.MobileFlyControls.Space then moveDir = moveDir + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or self.MobileFlyControls.Shift then moveDir = moveDir - Vector3.new(0, 1, 0) end
-
-            self.FlyBV.Velocity = moveDir * self.FlySpeed
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input == dragInput) then
+            local delta = input.Position - dragStart
+            self.FlyButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
-    self.Connections.characterAdded = LocalPlayer.CharacterAdded:Connect(function(character)
-        character:WaitForChild("HumanoidRootPart")
-        if self.Flying then
-            task.wait(1)
-            self:StartFlying()
-        end
-        if self.NoClip then
-            self.UI:Notify("Noclip Re-enabled", "info")
-        end
-        if self.GodMode then
-            self:ToggleGodMode(true)
+    self.FlyButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
         end
     end)
 
-    self.Connections.antiAFK = RunService.Heartbeat:Connect(function()
-        if self.AntiAFK then
-            LocalPlayer.Idled:Connect(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
+    self.FlyButton.MouseButton1Click:Connect(function()
+        self:FlyToggle()
+    end)
+end
+
+function Main:CreateWASDController()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    CollectionService:AddTag(ScreenGui, "main")
+
+    local ControllerFrame = Instance.new("Frame")
+    ControllerFrame.BorderSizePixel = 0
+    ControllerFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ControllerFrame.Style = Enum.FrameStyle.RobloxRound
+    ControllerFrame.Size = UDim2.new(0, 118, 0, 118)
+    ControllerFrame.Position = UDim2.new(0.75773, 0, 0.15845, 16)
+    ControllerFrame.Visible = false
+    ControllerFrame.Parent = ScreenGui
+
+    self.WASDFrame = ControllerFrame
+
+    local BTN_S = Instance.new("TextButton")
+    BTN_S.TextWrapped = true
+    BTN_S.BorderSizePixel = 0
+    BTN_S.TextScaled = true
+    BTN_S.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_S.Size = UDim2.new(0, 40, 0, 40)
+    BTN_S.Text = "S"
+    BTN_S.Name = "BTN_S"
+    BTN_S.Style = Enum.ButtonStyle.RobloxButton
+    BTN_S.Position = UDim2.new(0, 30, 0, 70)
+    BTN_S.Parent = ControllerFrame
+
+    local BTN_D = Instance.new("TextButton")
+    BTN_D.TextWrapped = true
+    BTN_D.BorderSizePixel = 0
+    BTN_D.TextScaled = true
+    BTN_D.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_D.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_D.Size = UDim2.new(0, 40, 0, 40)
+    BTN_D.Text = "D"
+    BTN_D.Name = "BTN_D"
+    BTN_D.Style = Enum.ButtonStyle.RobloxButton
+    BTN_D.Position = UDim2.new(0, 69, 0, 30)
+    BTN_D.Parent = ControllerFrame
+
+    local BTN_A = Instance.new("TextButton")
+    BTN_A.TextWrapped = true
+    BTN_A.BorderSizePixel = 0
+    BTN_A.TextScaled = true
+    BTN_A.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_A.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_A.Size = UDim2.new(0, 40, 0, 40)
+    BTN_A.Text = "A"
+    BTN_A.Name = "BTN_A"
+    BTN_A.Style = Enum.ButtonStyle.RobloxButton
+    BTN_A.Position = UDim2.new(0, -8, 0, 30)
+    BTN_A.Parent = ControllerFrame
+
+    local BTN_W = Instance.new("TextButton")
+    BTN_W.TextWrapped = true
+    BTN_W.BorderSizePixel = 0
+    BTN_W.TextScaled = true
+    BTN_W.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_W.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_W.Size = UDim2.new(0, 40, 0, 40)
+    BTN_W.Text = "W"
+    BTN_W.Name = "BTN_W"
+    BTN_W.Style = Enum.ButtonStyle.RobloxButton
+    BTN_W.Position = UDim2.new(0, 30, 0, -7)
+    BTN_W.Parent = ControllerFrame
+
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    ControllerFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = ControllerFrame.Position
         end
     end)
 
-    self.Connections.jump = UserInputService.JumpRequest:Connect(function()
-        if self.InfiniteJump and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
+    ControllerFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
         end
     end)
 
-    self.Connections.autoClick = RunService.Heartbeat:Connect(function()
-        if self.AutoClicker then
-            mouse1click()
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input == dragInput) then
+            local delta = input.Position - dragStart
+            ControllerFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
+
+    ControllerFrame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    BTN_W.MouseButton1Down:Connect(function()
+        self.MobileFlyControls.W = true
+        BTN_W.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    end)
+
+    BTN_W.MouseButton1Up:Connect(function()
+        self.MobileFlyControls.W = false
+        BTN_W.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    BTN_A.MouseButton1Down:Connect(function()
+        self.MobileFlyControls.A = true
+        BTN_A.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    end)
+
+    BTN_A.MouseButton1Up:Connect(function()
+        self.MobileFlyControls.A = false
+        BTN_A.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    BTN_S.MouseButton1Down:Connect(function()
+        self.MobileFlyControls.S = true
+        BTN_S.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    end)
+
+    BTN_S.MouseButton1Up:Connect(function()
+        self.MobileFlyControls.S = false
+        BTN_S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    BTN_D.MouseButton1Down:Connect(function()
+        self.MobileFlyControls.D = true
+        BTN_D.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    end)
+
+    BTN_D.MouseButton1Up:Connect(function()
+        self.MobileFlyControls.D = false
+        BTN_D.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+end
+
+function Main:FlyToggle()
+    self.Flying = not self.Flying
+
+    if self.Flying then
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(self.FlyButton, tweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(0, 255, 0),
+            Text = "Unfly"
+        })
+        tween:Play()
+        
+        if self.WASDFrame then
+            self.WASDFrame.Visible = true
+        end
+        
+        self:StartFlying()
+        self.UI:Notify("Flight Enabled", "success")
+    else
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(self.FlyButton, tweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+            Text = "Fly"
+        })
+        tween:Play()
+        
+        if self.WASDFrame then
+            self.WASDFrame.Visible = false
+        end
+        
+        self:StopFlying()
+        for control, _ in pairs(self.MobileFlyControls) do
+            self.MobileFlyControls[control] = false
+        end
+        self.UI:Notify("Flight Disabled", "info")
+    end
+end
+
+function Main:StartFlying()
+    if self.FlyBV then
+        self.FlyBV:Destroy()
+        self.FlyBV = nil
+    end
+
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        self.FlyBV = Instance.new("BodyVelocity")
+        self.FlyBV.Velocity = Vector3.new(0, 0, 0)
+        self.FlyBV.MaxForce = Vector3.new(0, 0, 0)
+        self.FlyBV.Parent = character.HumanoidRootPart
+        self.FlyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        local bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bodyGyro.P = 1000
+        bodyGyro.D = 50
+        bodyGyro.Parent = character.HumanoidRootPart
+        self.FlyGyro = bodyGyro
+    end
+end
+
+function Main:StopFlying()
+    if self.FlyBV then
+        self.FlyBV:Destroy()
+        self.FlyBV = nil
+    end
+    if self.FlyGyro then
+        self.FlyGyro:Destroy()
+        self.FlyGyro = nil
+    end
 end
 
 function Main:CreateQuickAccessPanel()
@@ -234,192 +452,183 @@ function Main:CreateQuickAccessPanel()
     end)
 end
 
-function Main:CreateMobileFlyToggle()
-    if self.FlyButton then return end
-
-    self.FlyButton = Instance.new("TextButton")
-    self.FlyButton.Size = UDim2.new(0, 80, 0, 80)
-    self.FlyButton.Position = UDim2.new(0, 30, 0.5, -40)
-    self.FlyButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    self.FlyButton.Text = "FLY\nOFF"
-    self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.FlyButton.Font = Enum.Font.GothamBlack
-    self.FlyButton.TextSize = 16
-    self.FlyButton.TextWrapped = true
-    self.FlyButton.ZIndex = 100
-    self.FlyButton.Parent = self.UI.ScreenGui
-
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 16)
-    btnCorner.Parent = self.FlyButton
-
-    local dragging = false
-    local dragInput, dragStart, startPos
-
-    self.FlyButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = self.FlyButton.Position
+function Main:SetupConnections()
+    self.Connections.commandBar = self.UI.CommandBar.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local command = self.UI.CommandBar.Text
+            if command ~= "" then
+                self:ExecuteCommand(command)
+                self.UI.CommandBar.Text = ""
+            end
         end
     end)
 
-    self.FlyButton.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
+    self.Connections.stepped = RunService.Stepped:Connect(function()
+        if self.NoClip and LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input == dragInput) then
-            local delta = input.Position - dragStart
-            self.FlyButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    self.Connections.heartbeat = RunService.Heartbeat:Connect(function()
+        if self.Flying and self.FlyBV then
+            local cam = workspace.CurrentCamera
+            self.FlyBV.Velocity = Vector3.new()
+
+            if UserInputService:GetFocusedTextBox() then return end
+
+            local moveDir = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) or self.MobileFlyControls.W then moveDir = moveDir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) or self.MobileFlyControls.S then moveDir = moveDir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) or self.MobileFlyControls.D then moveDir = moveDir + cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) or self.MobileFlyControls.A then moveDir = moveDir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+
+            self.FlyBV.Velocity = moveDir * self.FlySpeed
         end
     end)
 
-    self.FlyButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+    self.Connections.characterAdded = LocalPlayer.CharacterAdded:Connect(function(character)
+        character:WaitForChild("HumanoidRootPart")
+        if self.Flying then
+            task.wait(1)
+            self:StartFlying()
+        end
+        if self.NoClip then
+            self.UI:Notify("Noclip Re-enabled", "info")
+        end
+        if self.GodMode then
+            self:ToggleGodMode(true)
         end
     end)
 
-    self.FlyButton.MouseButton1Click:Connect(function()
-        self:FlyToggle()
+    self.Connections.antiAFK = RunService.Heartbeat:Connect(function()
+        if self.AntiAFK then
+            LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
     end)
 
-    self:CreateMobileFlyControls()
+    self.Connections.jump = UserInputService.JumpRequest:Connect(function()
+        if self.InfiniteJump and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+
+    self.Connections.autoClick = RunService.Heartbeat:Connect(function()
+        if self.AutoClicker then
+            mouse1click()
+        end
+    end)
 end
 
-function Main:CreateMobileFlyControls()
-    if self.MobileControlFrame then return end
-
-    if UserInputService.TouchEnabled then
-        self.MobileControlFrame = Instance.new("Frame")
-        self.MobileControlFrame.Size = UDim2.new(0, 200, 0, 200)
-        self.MobileControlFrame.Position = UDim2.new(1, -220, 1, -220)
-        self.MobileControlFrame.BackgroundTransparency = 1
-        self.MobileControlFrame.Visible = false
-        self.MobileControlFrame.Parent = self.UI.ScreenGui
-
-        local movementPad = Instance.new("Frame")
-        movementPad.Size = UDim2.new(0, 150, 0, 150)
-        movementPad.Position = UDim2.new(0, 0, 0, 0)
-        movementPad.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        movementPad.BackgroundTransparency = 0.3
-        movementPad.Parent = self.MobileControlFrame
-
-        local padCorner = Instance.new("UICorner")
-        padCorner.CornerRadius = UDim.new(0, 20)
-        padCorner.Parent = movementPad
-
-        local wBtn = self:CreateMobileButton("W", UDim2.new(0.5, -25, 0, 10), movementPad)
-        wBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.W = true end)
-        wBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.W = false end)
-
-        local aBtn = self:CreateMobileButton("A", UDim2.new(0, 10, 0.5, -25), movementPad)
-        aBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.A = true end)
-        aBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.A = false end)
-
-        local sBtn = self:CreateMobileButton("S", UDim2.new(0.5, -25, 1, -60), movementPad)
-        sBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.S = true end)
-        sBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.S = false end)
-
-        local dBtn = self:CreateMobileButton("D", UDim2.new(1, -60, 0.5, -25), movementPad)
-        dBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.D = true end)
-        dBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.D = false end)
-
-        local verticalFrame = Instance.new("Frame")
-        verticalFrame.Size = UDim2.new(0, 60, 0, 150)
-        verticalFrame.Position = UDim2.new(1, -70, 0, 0)
-        verticalFrame.BackgroundTransparency = 1
-        verticalFrame.Parent = self.MobileControlFrame
-
-        local spaceBtn = self:CreateMobileButton("↑", UDim2.new(0, 0, 0, 10), verticalFrame)
-        spaceBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.Space = true end)
-        spaceBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.Space = false end)
-
-        local shiftBtn = self:CreateMobileButton("↓", UDim2.new(0, 0, 1, -60), verticalFrame)
-        shiftBtn.MouseButton1Down:Connect(function() self.MobileFlyControls.Shift = true end)
-        shiftBtn.MouseButton1Up:Connect(function() self.MobileFlyControls.Shift = false end)
-    end
+function Main:Rejoin()
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
 end
 
-function Main:CreateMobileButton(text, position, parent)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 50, 0, 50)
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    button.BackgroundTransparency = 0.2
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.GothamBold
-    button.TextSize = 16
-    button.Parent = parent
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = button
-
-    return button
+function Main:RejoinRefresh()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end
 
-function Main:StartFlying()
-    if self.FlyBV then
-        self.FlyBV:Destroy()
-        self.FlyBV = nil
-    end
+function Main:ExitGame()
+    game:GetService("TeleportService"):Teleport(0)
+end
 
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        self.FlyBV = Instance.new("BodyVelocity")
-        self.FlyBV.Velocity = Vector3.new(0, 0, 0)
-        self.FlyBV.MaxForce = Vector3.new(0, 0, 0)
-        self.FlyBV.Parent = character.HumanoidRootPart
-        self.FlyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+function Main:ServerHop()
+    local gameId = tostring(game.PlaceId)
+    local servers = {}
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    
+    if success and result and result.data then
+        for _, server in ipairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server)
+            end
+        end
         
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bodyGyro.P = 1000
-        bodyGyro.D = 50
-        bodyGyro.Parent = character.HumanoidRootPart
-        self.FlyGyro = bodyGyro
-    end
-end
-
-function Main:StopFlying()
-    if self.FlyBV then
-        self.FlyBV:Destroy()
-        self.FlyBV = nil
-    end
-    if self.FlyGyro then
-        self.FlyGyro:Destroy()
-        self.FlyGyro = nil
-    end
-end
-
-function Main:FlyToggle()
-    self.Flying = not self.Flying
-
-    if self.Flying then
-        self.FlyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
-        self.FlyButton.Text = "FLY\nON"
-        if self.MobileControlFrame then
-            self.MobileControlFrame.Visible = true
+        if #servers > 0 then
+            local randomServer = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer.id, LocalPlayer)
+        else
+            self.UI:Notify("No servers found!", "error")
         end
-        self:StartFlying()
-        self.UI:Notify("Flight Enabled", "success")
     else
-        self.FlyButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-        self.FlyButton.Text = "FLY\nOFF"
-        if self.MobileControlFrame then
-            self.MobileControlFrame.Visible = false
-        end
-        self:StopFlying()
-        for control, _ in pairs(self.MobileFlyControls) do
-            self.MobileFlyControls[control] = false
-        end
-        self.UI:Notify("Flight Disabled", "info")
+        self.UI:Notify("Failed to find servers", "error")
     end
+end
+
+function Main:PingServerHop()
+    local gameId = tostring(game.PlaceId)
+    local servers = {}
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    
+    if success and result and result.data then
+        table.sort(result.data, function(a, b)
+            return a.playing > b.playing
+        end)
+        
+        for _, server in ipairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server)
+            end
+        end
+        
+        if #servers > 0 then
+            local bestServer = servers[1]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer.id, LocalPlayer)
+        else
+            self.UI:Notify("No servers found!", "error")
+        end
+    else
+        self.UI:Notify("Failed to find servers", "error")
+    end
+end
+
+function Main:ToggleAntiFling()
+    self.AntiFling = not self.AntiFling
+    
+    if self.AntiFling then
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Massless = true
+                    part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0)
+                end
+            end
+        end
+        self.UI:Notify("Anti-Fling Enabled", "success")
+    else
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Massless = false
+                    part.CustomPhysicalProperties = nil
+                end
+            end
+        end
+        self.UI:Notify("Anti-Fling Disabled", "info")
+    end
+end
+
+function Main:ToggleAntiKick()
+    self.AntiKick = not self.AntiKick
+    self:SetupAntiKick()
+    self.UI:Notify("Anti-Kick " .. (self.AntiKick and "Enabled" or "Disabled"), self.AntiKick and "success" or "info")
 end
 
 function Main:ToggleGodMode(enable)
@@ -514,12 +723,17 @@ function Main:ExecuteCommand(cmd)
     local commandName = args[1]
     table.remove(args, 1)
 
+    if commandName == "commands" or commandName == "cmds" or commandName == "help" then
+        self:ShowCommandsList()
+        return
+    end
+
     local success, result = pcall(function()
         return self.Commands:Execute(commandName, args)
     end)
 
     if not success then
-        self.UI:Notify("Command Error", "error")
+        self.UI:Notify("Command Error: " .. tostring(result), "error")
     end
 end
 
@@ -700,6 +914,138 @@ function Main:FindPlayer(name)
         end
     end
     return nil
+end
+
+function Main:ShowCommandsList()
+    if self.CommandsWindow then
+        self.CommandsWindow:Destroy()
+        self.CommandsWindow = nil
+        return
+    end
+
+    self.CommandsWindow = Instance.new("Frame")
+    self.CommandsWindow.Size = UDim2.new(0, 400, 0, 500)
+    self.CommandsWindow.Position = UDim2.new(0.5, -200, 0.5, -250)
+    self.CommandsWindow.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    self.CommandsWindow.BackgroundTransparency = 0.1
+    self.CommandsWindow.Parent = self.UI.ScreenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = self.CommandsWindow
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = self.UI.AccentColor
+    stroke.Thickness = 2
+    stroke.Parent = self.CommandsWindow
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundTransparency = 1
+    title.Text = "COMMANDS LIST"
+    title.TextColor3 = self.UI.TextColor
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+    title.Parent = self.CommandsWindow
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0, 5)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 14
+    closeBtn.Parent = self.CommandsWindow
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeBtn
+
+    closeBtn.MouseButton1Click:Connect(function()
+        self.CommandsWindow:Destroy()
+        self.CommandsWindow = nil
+    end)
+
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, -20, 1, -60)
+    scrollFrame.Position = UDim2.new(0, 10, 0, 45)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.ScrollBarThickness = 6
+    scrollFrame.Parent = self.CommandsWindow
+
+    local commandsList = {
+        {"fly", "Toggle flight mode"},
+        {"noclip", "Toggle noclip through walls"},
+        {"godmode", "Toggle invincibility"},
+        {"speed [number]", "Set walk speed (default 16)"},
+        {"jump [number]", "Set jump power (default 50)"},
+        {"esp [player]", "Show ESP for specific player"},
+        {"espall", "Show ESP for all players"},
+        {"espnpc", "Show ESP for NPCs"},
+        {"removeesp", "Remove all ESP"},
+        {"watch [player]", "Spectate a player"},
+        {"tp [player]", "Teleport to a player"},
+        {"reset", "Reset your character"},
+        {"infinitejump", "Toggle infinite jumping"},
+        {"antiafk", "Toggle anti-afk"},
+        {"autoclick", "Toggle auto-clicker"},
+        {"time [number]", "Set game time (0-24)"},
+        {"fov [number]", "Set camera FOV"},
+        {"xray", "Toggle x-ray vision"},
+        {"fullbright", "Toggle fullbright lighting"},
+        {"flyspeed [number]", "Set flight speed"},
+        {"rejoin/rj", "Rejoin the game"},
+        {"rejoinrefresh/rjre", "Rejoin to same position"},
+        {"exit", "Leave the game"},
+        {"serverhop/shop", "Hop to random server"},
+        {"pingserverhop/pshop", "Hop to best ping server"},
+        {"antifling/af", "Toggle anti-fling"},
+        {"unantifling/uaf", "Disable anti-fling"},
+        {"antikick/ak", "Toggle anti-kick"},
+        {"commands", "Show this commands list"}
+    }
+
+    local uiListLayout = Instance.new("UIListLayout")
+    uiListLayout.Padding = UDim.new(0, 8)
+    uiListLayout.Parent = scrollFrame
+
+    for i, commandData in ipairs(commandsList) do
+        local commandFrame = Instance.new("Frame")
+        commandFrame.Size = UDim2.new(1, 0, 0, 40)
+        commandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        commandFrame.BackgroundTransparency = 0.2
+        commandFrame.Parent = scrollFrame
+
+        local commandCorner = Instance.new("UICorner")
+        commandCorner.CornerRadius = UDim.new(0, 6)
+        commandCorner.Parent = commandFrame
+
+        local commandName = Instance.new("TextLabel")
+        commandName.Size = UDim2.new(0.4, -5, 1, 0)
+        commandName.Position = UDim2.new(0, 10, 0, 0)
+        commandName.BackgroundTransparency = 1
+        commandName.Text = commandData[1]
+        commandName.TextColor3 = self.UI.AccentColor
+        commandName.Font = Enum.Font.GothamBold
+        commandName.TextSize = 14
+        commandName.TextXAlignment = Enum.TextXAlignment.Left
+        commandName.Parent = commandFrame
+
+        local commandDesc = Instance.new("TextLabel")
+        commandDesc.Size = UDim2.new(0.6, -10, 1, 0)
+        commandDesc.Position = UDim2.new(0.4, 5, 0, 0)
+        commandDesc.BackgroundTransparency = 1
+        commandDesc.Text = commandData[2]
+        commandDesc.TextColor3 = self.UI.TextColor
+        commandDesc.Font = Enum.Font.Gotham
+        commandDesc.TextSize = 12
+        commandDesc.TextXAlignment = Enum.TextXAlignment.Left
+        commandDesc.Parent = commandFrame
+    end
+
+    task.wait()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
 end
 
 Main:Init()
