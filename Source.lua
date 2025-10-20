@@ -1,7 +1,7 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 getgenv().Syntax = {
-    Version = "1.2",
+    Version = "1.3",
     Loaded = false
 }
 
