@@ -53,6 +53,13 @@ function Commands:RegisterAll()
             Description = "Disable noclip"
         },
         {
+            Names = {"godmode", "god"},
+            Function = function(args)
+                Main:ToggleGodMode()
+            end,
+            Description = "Toggle god mode"
+        },
+        {
             Names = {"watch", "view", "spectate"},
             Function = function(args)
                 Main:WatchPlayer(args[1])
@@ -111,13 +118,6 @@ function Commands:RegisterAll()
                 Main:RemoveESP()
             end,
             Description = "Remove all ESP"
-        },
-        {
-            Names = {"tptool", "teleporttool", "tpt"},
-            Function = function(args)
-                Main:GiveTPTool()
-            end,
-            Description = "Gives a teleport tool"
         },
         {
             Names = {"rejoin", "rj"},
@@ -225,6 +225,13 @@ function Commands:RegisterAll()
                 Main:SetFOV(args[1])
             end,
             Description = "Set camera FOV"
+        },
+        {
+            Names = {"flyspeed", "fs"},
+            Function = function(args)
+                Main:SetFlySpeed(args[1])
+            end,
+            Description = "Set flight speed"
         }
     }
 end
@@ -245,5 +252,7 @@ function Commands:Execute(commandName, args)
     end
     Main.UI:Notify("Unknown command: " .. commandName, "error")
 end
+
+Commands:RegisterAll()
 
 return Commands
