@@ -394,5 +394,3 @@ function UI:Notify(message, type)
         end
     end)
 end
-
-return UI
