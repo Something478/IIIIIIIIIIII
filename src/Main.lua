@@ -53,7 +53,7 @@ function Main:Init()
 end
 
 function Main:LoadUI()
-    self.UI = UI
+    self.UI = require(script.Parent.UI)
     self.UI:CreateMainWindow()
 end
 
@@ -68,8 +68,8 @@ function Main:SetupAntiKick()
             local method = getnamecallmethod()
             local args = {...}
             
-            if self == LocalPlayer and method == "Kick" and self.AntiKick then
-                self.UI:Notify("Blocked kick attempt!", "warning")
+            if self == LocalPlayer and method == "Kick" and Main.AntiKick then
+                Main.UI:Notify("Blocked kick attempt!", "warning")
                 return nil
             end
             
@@ -353,7 +353,7 @@ function Main:CreateQuickAccessPanel()
     self.QuickAccess = Instance.new("Frame")
     self.QuickAccess.Size = UDim2.new(0, 300, 0, 200)
     self.QuickAccess.Position = UDim2.new(0, 20, 0.5, -100)
-    self.QuickAccess.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    self.QuickAccess.BackgroundColor3 = self.UI.MainColor
     self.QuickAccess.BackgroundTransparency = 0.1
     self.QuickAccess.Visible = false
     self.QuickAccess.Parent = self.UI.ScreenGui
@@ -514,6 +514,10 @@ function Main:SetupConnections()
         end
         if self.GodMode then
             self:ToggleGodMode(true)
+        end
+        if self.ESPEnabled then
+            task.wait(2)
+            self:ESPAllPlayers()
         end
     end)
 
@@ -727,6 +731,19 @@ function Main:CreateESP(target, name)
     label.Parent = billboard
 
     self.ESPHandles[target] = {highlight, billboard}
+    
+    -- Track character respawns
+    if target:IsA("Model") and Players:GetPlayerFromCharacter(target) then
+        local player = Players:GetPlayerFromCharacter(target)
+        if player then
+            player.CharacterAdded:Connect(function(newChar)
+                task.wait(2)
+                if self.ESPEnabled then
+                    self:CreateESP(newChar, player.Name)
+                end
+            end)
+        end
+    end
 end
 
 function Main:RemoveESP()
