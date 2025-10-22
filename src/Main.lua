@@ -732,7 +732,6 @@ function Main:CreateESP(target, name)
 
     self.ESPHandles[target] = {highlight, billboard}
     
-    -- Track character respawns
     if target:IsA("Model") and Players:GetPlayerFromCharacter(target) then
         local player = Players:GetPlayerFromCharacter(target)
         if player then
