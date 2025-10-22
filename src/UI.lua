@@ -60,7 +60,7 @@ function UI:CreateMainWindow()
     self.MainButton.Size = UDim2.new(0, 50, 0, 50)
     self.MainButton.Position = UDim2.new(0.5, -25, 0, 20)
     self.MainButton.BackgroundColor3 = self.MainColor
-    self.MainButton.Text = "𝐒𝐂"
+    self.MainButton.Text = "SC"
     self.MainButton.TextColor3 = self.AccentColor
     self.MainButton.Font = Enum.Font.GothamBold
     self.MainButton.TextSize = 18
@@ -335,7 +335,7 @@ function UI:CreateNotificationFrame()
     self.NotifIcon.Size = UDim2.new(0, 40, 0, 40)
     self.NotifIcon.Position = UDim2.new(0, 15, 0.5, -20)
     self.NotifIcon.BackgroundTransparency = 1
-    self.NotifIcon.Text = "𝐒𝐂"
+    self.NotifIcon.Text = "SC"
     self.NotifIcon.TextColor3 = self.AccentColor
     self.NotifIcon.Font = Enum.Font.GothamBold
     self.NotifIcon.TextSize = 18
@@ -370,7 +370,7 @@ function UI:Notify(message, type)
         self.NotifIcon.Text = "⚠"
         self.NotifIcon.TextColor3 = self.WarningColor
     else
-        self.NotifIcon.Text = "𝐒𝐂"
+        self.NotifIcon.Text = "SC"
         self.NotifIcon.TextColor3 = self.AccentColor
     end
 
