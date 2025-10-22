@@ -5,9 +5,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local TextChatService = game:GetService("TextChatService")
-local StarterGui = game:GetService("StarterGui")
-local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local CollectionService = game:GetService("CollectionService")
@@ -18,7 +15,9 @@ Main.Flying = false
 Main.NoClip = false
 Main.Spectating = nil
 Main.FlyBV = nil
+Main.FlyGyro = nil
 Main.FlyButton = nil
+Main.WASDFrame = nil
 Main.ESPEnabled = false
 Main.ESPHandles = {}
 Main.NPCESPEnabled = false
@@ -47,7 +46,6 @@ Main.Connections = {}
 function Main:Init()
     getgenv().Syntax = self
     self:LoadUI()
-    self:LoadCommands()
     self:SetupConnections()
     self:CreateQuickAccessPanel()
     self:SetupAntiKick()
@@ -55,13 +53,8 @@ function Main:Init()
 end
 
 function Main:LoadUI()
-    self.UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/UI.lua"))()
+    self.UI = UI
     self.UI:CreateMainWindow()
-end
-
-function Main:LoadCommands()
-    self.Commands = loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/Commands.lua"))()
-    self.Commands:RegisterAll()
 end
 
 function Main:SetupAntiKick()
@@ -91,9 +84,8 @@ function Main:CreateFlyButton()
     if self.FlyButton then return end
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    CollectionService:AddTag(ScreenGui, "main")
 
     self.FlyButton = Instance.new("TextButton")
     self.FlyButton.TextWrapped = true
@@ -101,17 +93,14 @@ function Main:CreateFlyButton()
     self.FlyButton.TextScaled = true
     self.FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     self.FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    self.FlyButton.Size = UDim2.new(0.06495, 0, 0.15279, 0)
+    self.FlyButton.Size = UDim2.new(0, 80, 0, 40)
     self.FlyButton.Text = "Fly"
-    self.FlyButton.Position = UDim2.new(0.46667, 0, 0.31124, 0)
+    self.FlyButton.Position = UDim2.new(0.8, 0, 0.1, 0)
     self.FlyButton.Visible = false
     self.FlyButton.Parent = ScreenGui
 
     local UICorner = Instance.new("UICorner")
     UICorner.Parent = self.FlyButton
-
-    local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
-    UIAspectRatioConstraint.Parent = self.FlyButton
 
     local dragging = false
     local dragInput, dragStart, startPos
@@ -152,72 +141,66 @@ function Main:CreateWASDController()
     if self.WASDFrame then return end
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    CollectionService:AddTag(ScreenGui, "main")
 
     local ControllerFrame = Instance.new("Frame")
     ControllerFrame.BorderSizePixel = 0
-    ControllerFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ControllerFrame.Style = Enum.FrameStyle.RobloxRound
-    ControllerFrame.Size = UDim2.new(0, 118, 0, 118)
-    ControllerFrame.Position = UDim2.new(0.75773, 0, 0.15845, 16)
+    ControllerFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ControllerFrame.BackgroundTransparency = 0.3
+    ControllerFrame.Size = UDim2.new(0, 150, 0, 150)
+    ControllerFrame.Position = UDim2.new(0.1, 0, 0.6, 0)
     ControllerFrame.Visible = false
     ControllerFrame.Parent = ScreenGui
 
     self.WASDFrame = ControllerFrame
 
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 15)
+    UICorner.Parent = ControllerFrame
+
     local BTN_S = Instance.new("TextButton")
-    BTN_S.TextWrapped = true
-    BTN_S.BorderSizePixel = 0
-    BTN_S.TextScaled = true
-    BTN_S.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BTN_S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     BTN_S.Size = UDim2.new(0, 40, 0, 40)
     BTN_S.Text = "S"
     BTN_S.Name = "BTN_S"
-    BTN_S.Style = Enum.ButtonStyle.RobloxButton
-    BTN_S.Position = UDim2.new(0, 30, 0, 70)
+    BTN_S.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    BTN_S.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_S.Position = UDim2.new(0.5, -20, 0.7, -20)
     BTN_S.Parent = ControllerFrame
 
     local BTN_D = Instance.new("TextButton")
-    BTN_D.TextWrapped = true
-    BTN_D.BorderSizePixel = 0
-    BTN_D.TextScaled = true
-    BTN_D.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BTN_D.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     BTN_D.Size = UDim2.new(0, 40, 0, 40)
     BTN_D.Text = "D"
     BTN_D.Name = "BTN_D"
-    BTN_D.Style = Enum.ButtonStyle.RobloxButton
-    BTN_D.Position = UDim2.new(0, 69, 0, 30)
+    BTN_D.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    BTN_D.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_D.Position = UDim2.new(0.7, -20, 0.5, -20)
     BTN_D.Parent = ControllerFrame
 
     local BTN_A = Instance.new("TextButton")
-    BTN_A.TextWrapped = true
-    BTN_A.BorderSizePixel = 0
-    BTN_A.TextScaled = true
-    BTN_A.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BTN_A.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     BTN_A.Size = UDim2.new(0, 40, 0, 40)
     BTN_A.Text = "A"
     BTN_A.Name = "BTN_A"
-    BTN_A.Style = Enum.ButtonStyle.RobloxButton
-    BTN_A.Position = UDim2.new(0, -8, 0, 30)
+    BTN_A.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    BTN_A.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_A.Position = UDim2.new(0.3, -20, 0.5, -20)
     BTN_A.Parent = ControllerFrame
 
     local BTN_W = Instance.new("TextButton")
-    BTN_W.TextWrapped = true
-    BTN_W.BorderSizePixel = 0
-    BTN_W.TextScaled = true
-    BTN_W.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BTN_W.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     BTN_W.Size = UDim2.new(0, 40, 0, 40)
     BTN_W.Text = "W"
     BTN_W.Name = "BTN_W"
-    BTN_W.Style = Enum.ButtonStyle.RobloxButton
-    BTN_W.Position = UDim2.new(0, 30, 0, -7)
+    BTN_W.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    BTN_W.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BTN_W.Position = UDim2.new(0.5, -20, 0.3, -20)
     BTN_W.Parent = ControllerFrame
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = BTN_W
+    buttonCorner:Clone().Parent = BTN_A
+    buttonCorner:Clone().Parent = BTN_S
+    buttonCorner:Clone().Parent = BTN_D
 
     local dragging = false
     local dragInput, dragStart, startPos
@@ -251,42 +234,42 @@ function Main:CreateWASDController()
 
     BTN_W.MouseButton1Down:Connect(function()
         self.MobileFlyControls.W = true
-        BTN_W.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        BTN_W.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     end)
 
     BTN_W.MouseButton1Up:Connect(function()
         self.MobileFlyControls.W = false
-        BTN_W.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        BTN_W.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     end)
 
     BTN_A.MouseButton1Down:Connect(function()
         self.MobileFlyControls.A = true
-        BTN_A.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        BTN_A.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     end)
 
     BTN_A.MouseButton1Up:Connect(function()
         self.MobileFlyControls.A = false
-        BTN_A.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        BTN_A.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     end)
 
     BTN_S.MouseButton1Down:Connect(function()
         self.MobileFlyControls.S = true
-        BTN_S.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        BTN_S.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     end)
 
     BTN_S.MouseButton1Up:Connect(function()
         self.MobileFlyControls.S = false
-        BTN_S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        BTN_S.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     end)
 
     BTN_D.MouseButton1Down:Connect(function()
         self.MobileFlyControls.D = true
-        BTN_D.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        BTN_D.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     end)
 
     BTN_D.MouseButton1Up:Connect(function()
         self.MobileFlyControls.D = false
-        BTN_D.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        BTN_D.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     end)
 end
 
@@ -294,32 +277,20 @@ function Main:FlyToggle()
     self.Flying = not self.Flying
 
     if self.Flying then
-        if not self.FlyButton then
-            self:CreateFlyButton()
-        end
-        if not self.WASDFrame then
-            self:CreateWASDController()
-        end
+        self:CreateFlyButton()
+        self:CreateWASDController()
         
         self.FlyButton.Visible = true
         self.WASDFrame.Visible = true
         
-        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = TweenService:Create(self.FlyButton, tweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(0, 255, 0),
-            Text = "Unfly"
-        })
-        tween:Play()
+        self.FlyButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        self.FlyButton.Text = "Unfly"
         
         self:StartFlying()
         self.UI:Notify("Flight Enabled", "success")
     else
-        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = TweenService:Create(self.FlyButton, tweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-            Text = "Fly"
-        })
-        tween:Play()
+        self.FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        self.FlyButton.Text = "Fly"
         
         if self.FlyButton then
             self.FlyButton.Visible = false
@@ -346,21 +317,24 @@ function Main:StartFlying()
         self.FlyBV:Destroy()
         self.FlyBV = nil
     end
+    if self.FlyGyro then
+        self.FlyGyro:Destroy()
+        self.FlyGyro = nil
+    end
 
     local character = LocalPlayer.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
         self.FlyBV = Instance.new("BodyVelocity")
         self.FlyBV.Velocity = Vector3.new(0, 0, 0)
-        self.FlyBV.MaxForce = Vector3.new(0, 0, 0)
+        self.FlyBV.MaxForce = Vector3.new(40000, 40000, 40000)
+        self.FlyBV.P = 1250
         self.FlyBV.Parent = character.HumanoidRootPart
-        self.FlyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
         
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bodyGyro.P = 1000
-        bodyGyro.D = 50
-        bodyGyro.Parent = character.HumanoidRootPart
-        self.FlyGyro = bodyGyro
+        self.FlyGyro = Instance.new("BodyGyro")
+        self.FlyGyro.MaxTorque = Vector3.new(40000, 40000, 40000)
+        self.FlyGyro.P = 1000
+        self.FlyGyro.D = 50
+        self.FlyGyro.Parent = character.HumanoidRootPart
     end
 end
 
@@ -431,7 +405,7 @@ function Main:CreateQuickAccessPanel()
         button.BackgroundColor3 = self.UI.SecondaryColor
         button.Text = buttonData[1]
         button.TextColor3 = self.UI.TextColor
-        button.Font = Enum.Font.FredokaOne
+        button.Font = Enum.Font.Gotham
         button.TextSize = 12
         button.Parent = buttonContainer
 
@@ -491,21 +465,41 @@ function Main:SetupConnections()
     end)
 
     self.Connections.heartbeat = RunService.Heartbeat:Connect(function()
-        if self.Flying and self.FlyBV then
+        if self.Flying and self.FlyBV and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local cam = workspace.CurrentCamera
             self.FlyBV.Velocity = Vector3.new()
 
             if UserInputService:GetFocusedTextBox() then return end
 
             local moveDir = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) or self.MobileFlyControls.W then moveDir = moveDir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) or self.MobileFlyControls.S then moveDir = moveDir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) or self.MobileFlyControls.D then moveDir = moveDir + cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) or self.MobileFlyControls.A then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) or self.MobileFlyControls.W then 
+                moveDir = moveDir + cam.CFrame.LookVector 
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) or self.MobileFlyControls.S then 
+                moveDir = moveDir - cam.CFrame.LookVector 
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) or self.MobileFlyControls.D then 
+                moveDir = moveDir + cam.CFrame.RightVector 
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) or self.MobileFlyControls.A then 
+                moveDir = moveDir - cam.CFrame.RightVector 
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then 
+                moveDir = moveDir + Vector3.new(0, 1, 0) 
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then 
+                moveDir = moveDir - Vector3.new(0, 1, 0) 
+            end
+
+            if moveDir.Magnitude > 0 then
+                moveDir = moveDir.Unit
+            end
 
             self.FlyBV.Velocity = moveDir * self.FlySpeed
+            
+            if self.FlyGyro then
+                self.FlyGyro.CFrame = cam.CFrame
+            end
         end
     end)
 
@@ -523,15 +517,6 @@ function Main:SetupConnections()
         end
     end)
 
-    self.Connections.antiAFK = RunService.Heartbeat:Connect(function()
-        if self.AntiAFK then
-            LocalPlayer.Idled:Connect(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
-        end
-    end)
-
     self.Connections.jump = UserInputService.JumpRequest:Connect(function()
         if self.InfiniteJump and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -540,208 +525,6 @@ function Main:SetupConnections()
             end
         end
     end)
-
-    self.Connections.autoClick = RunService.Heartbeat:Connect(function()
-        if self.AutoClicker then
-            mouse1click()
-        end
-    end)
-end
-
-function Main:Rejoin()
-    TeleportService:Teleport(game.PlaceId, LocalPlayer)
-end
-
-function Main:RejoinRefresh()
-    local character = LocalPlayer.Character
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-    local savedPosition = humanoidRootPart and humanoidRootPart.CFrame
-    
-    if savedPosition then
-        local success = pcall(function()
-            local dataStore = game:GetService("DataStoreService"):GetDataStore("SyntaxPositionSave")
-            dataStore:SetAsync(LocalPlayer.UserId .. "_position", {
-                X = savedPosition.X,
-                Y = savedPosition.Y, 
-                Z = savedPosition.Z
-            })
-        end)
-    end
-    
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-end
-
-function Main:ExitGame()
-    game:GetService("TeleportService"):Teleport(0)
-end
-
-function Main:ServerHop()
-    local gameId = tostring(game.PlaceId)
-    local servers = {}
-    
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-    
-    if success and result and result.data then
-        for _, server in ipairs(result.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                table.insert(servers, server)
-            end
-        end
-        
-        if #servers > 0 then
-            local randomServer = servers[math.random(1, #servers)]
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer.id, LocalPlayer)
-        else
-            self.UI:Notify("No servers found!", "error")
-        end
-    else
-        self.UI:Notify("Failed to find servers", "error")
-    end
-end
-
-function Main:PingServerHop()
-    local gameId = tostring(game.PlaceId)
-    local servers = {}
-    
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-    
-    if success and result and result.data then
-        table.sort(result.data, function(a, b)
-            return a.playing > b.playing
-        end)
-        
-        for _, server in ipairs(result.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                table.insert(servers, server)
-            end
-        end
-        
-        if #servers > 0 then
-            local bestServer = servers[1]
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer.id, LocalPlayer)
-        else
-            self.UI:Notify("No servers found!", "error")
-        end
-    else
-        self.UI:Notify("Failed to find servers", "error")
-    end
-end
-
-function Main:ToggleAntiFling()
-    self.AntiFling = not self.AntiFling
-    
-    if self.AntiFling then
-        if LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Massless = true
-                    part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0)
-                end
-            end
-        end
-        self.UI:Notify("Anti-Fling Enabled", "success")
-    else
-        if LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Massless = false
-                    part.CustomPhysicalProperties = nil
-                end
-            end
-        end
-        self.UI:Notify("Anti-Fling Disabled", "info")
-    end
-end
-
-function Main:ToggleAntiKick()
-    self.AntiKick = not self.AntiKick
-    self:SetupAntiKick()
-    self.UI:Notify("Anti-Kick " .. (self.AntiKick and "Enabled" or "Disabled"), self.AntiKick and "success" or "info")
-end
-
-function Main:ToggleGodMode(enable)
-    self.GodMode = enable or not self.GodMode
-    
-    if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            if self.GodMode then
-                humanoid.Name = "GodModeHumanoid"
-                humanoid.MaxHealth = math.huge
-                humanoid.Health = math.huge
-            else
-                humanoid.MaxHealth = 100
-                humanoid.Health = 100
-            end
-        end
-    end
-    
-    self.UI:Notify("God Mode " .. (self.GodMode and "Enabled" or "Disabled"), self.GodMode and "success" or "info")
-end
-
-function Main:ToggleXRay()
-    self.XRay = not self.XRay
-    
-    if self.XRay then
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") and part.Transparency < 1 then
-                part.LocalTransparencyModifier = 0.5
-            end
-        end
-        self.UI:Notify("XRay Enabled", "success")
-    else
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.LocalTransparencyModifier = 0
-            end
-        end
-        self.UI:Notify("XRay Disabled", "info")
-    end
-end
-
-function Main:ToggleFullbright()
-    self.Fullbright = not self.Fullbright
-    
-    if self.Fullbright then
-        Lighting.Ambient = Color3.new(1, 1, 1)
-        Lighting.Brightness = 2
-        Lighting.GlobalShadows = false
-        self.UI:Notify("Fullbright Enabled", "success")
-    else
-        Lighting.Ambient = Color3.new(0, 0, 0)
-        Lighting.Brightness = 1
-        Lighting.GlobalShadows = true
-        self.UI:Notify("Fullbright Disabled", "info")
-    end
-end
-
-function Main:ToggleInfiniteJump()
-    self.InfiniteJump = not self.InfiniteJump
-    self.UI:Notify("Infinite Jump " .. (self.InfiniteJump and "Enabled" or "Disabled"), self.InfiniteJump and "success" or "info")
-end
-
-function Main:ToggleAntiAFK()
-    self.AntiAFK = not self.AntiAFK
-    self.UI:Notify("Anti-AFK " .. (self.AntiAFK and "Enabled" or "Disabled"), self.AntiAFK and "success" or "info")
-end
-
-function Main:ToggleAutoClicker()
-    self.AutoClicker = not self.AutoClicker
-    self.UI:Notify("Auto-Clicker " .. (self.AutoClicker and "Enabled" or "Disabled"), self.AutoClicker and "success" or "info")
-end
-
-function Main:SetTime(time)
-    Lighting.ClockTime = tonumber(time) or 12
-    self.UI:Notify("Time Set: " .. Lighting.ClockTime, "success")
-end
-
-function Main:SetFOV(fov)
-    workspace.CurrentCamera.FieldOfView = tonumber(fov) or 70
-    self.UI:Notify("FOV Set: " .. workspace.CurrentCamera.FieldOfView, "success")
 end
 
 function Main:ExecuteCommand(cmd)
@@ -755,22 +538,81 @@ function Main:ExecuteCommand(cmd)
     local commandName = args[1]
     table.remove(args, 1)
 
-    if commandName == "commands" or commandName == "cmds" or commandName == "help" then
+    if commandName == "fly" then
+        self:FlyToggle()
+    elseif commandName == "unfly" then
+        if self.Flying then
+            self:FlyToggle()
+        end
+    elseif commandName == "flyspeed" then
+        self:SetFlySpeed(args[1])
+    elseif commandName == "noclip" or commandName == "nc" then
+        self:NoClipToggle()
+    elseif commandName == "clip" then
+        self.NoClip = false
+        self.UI:Notify("Noclip Disabled", "info")
+    elseif commandName == "godmode" then
+        self:ToggleGodMode()
+    elseif commandName == "speed" then
+        self:SetWalkSpeed(args[1])
+    elseif commandName == "jump" then
+        self:SetJumpPower(args[1])
+    elseif commandName == "esp" then
+        self:ESPPlayer(args[1])
+    elseif commandName == "espall" then
+        self:ESPAllPlayers()
+    elseif commandName == "espnpc" then
+        self:ESPAllNPCs()
+    elseif commandName == "removeesp" then
+        self:RemoveESP()
+    elseif commandName == "watch" then
+        self:WatchPlayer(args[1])
+    elseif commandName == "unwatch" then
+        self:WatchPlayer(nil)
+    elseif commandName == "tp" then
+        self:TeleportToPlayer(args[1])
+    elseif commandName == "reset" or commandName == "re" then
+        self:ResetCharacter()
+    elseif commandName == "infinitejump" or commandName == "ij" then
+        self:ToggleInfiniteJump()
+    elseif commandName == "antiafk" or commandName == "aafk" then
+        self:ToggleAntiAFK()
+    elseif commandName == "autoclick" or commandName == "ac" then
+        self:ToggleAutoClicker()
+    elseif commandName == "time" then
+        self:SetTime(args[1])
+    elseif commandName == "fov" then
+        self:SetFOV(args[1])
+    elseif commandName == "xray" then
+        self:ToggleXRay()
+    elseif commandName == "fullbright" or commandName == "fb" then
+        self:ToggleFullbright()
+    elseif commandName == "rejoin" or commandName == "rj" then
+        self:Rejoin()
+    elseif commandName == "rejoinrefresh" or commandName == "rjre" then
+        self:RejoinRefresh()
+    elseif commandName == "exit" then
+        self:ExitGame()
+    elseif commandName == "serverhop" or commandName == "shop" then
+        self:ServerHop()
+    elseif commandName == "pingserverhop" or commandName == "pshop" then
+        self:PingServerHop()
+    elseif commandName == "antifling" or commandName == "af" then
+        self:ToggleAntiFling()
+    elseif commandName == "unantifling" or commandName == "uaf" then
+        self.AntiFling = false
+        self.UI:Notify("Anti-Fling Disabled", "info")
+    elseif commandName == "antikick" or commandName == "ak" then
+        self:ToggleAntiKick()
+    elseif commandName == "commands" or commandName == "cmds" or commandName == "help" then
         self:ShowCommandsList()
-        return
-    end
-
-    local success, result = pcall(function()
-        return self.Commands:Execute(commandName, args)
-    end)
-
-    if not success then
-        self.UI:Notify("Command Error: " .. tostring(result), "error")
+    else
+        self.UI:Notify("Unknown command: " .. commandName, "error")
     end
 end
 
 function Main:SetWalkSpeed(speed)
-    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
         self.Speed = tonumber(speed) or 16
         humanoid.WalkSpeed = self.Speed
@@ -779,7 +621,7 @@ function Main:SetWalkSpeed(speed)
 end
 
 function Main:SetJumpPower(power)
-    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
         self.JumpPower = tonumber(power) or 50
         humanoid.JumpPower = self.JumpPower
@@ -795,22 +637,24 @@ end
 function Main:WatchPlayer(playerName)
     if playerName then
         local target = self:FindPlayer(playerName)
-        if target then
+        if target and target.Character then
             self.Spectating = target
             workspace.CurrentCamera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
             self.UI:Notify("Watching: " .. target.Name, "success")
         end
     else
         self.Spectating = nil
-        workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if LocalPlayer.Character then
+            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        end
         self.UI:Notify("Stopped Watching", "info")
     end
 end
 
 function Main:TeleportToPlayer(playerName)
     local target = self:FindPlayer(playerName)
-    if target and target.Character and LocalPlayer.Character then
-        LocalPlayer.Character:SetPrimaryPartCFrame(target.Character.PrimaryPart.CFrame + Vector3.new(0, 3, 0))
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character:SetPrimaryPartCFrame(target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
         self.UI:Notify("Teleported To: " .. target.Name, "success")
     end
 end
@@ -824,7 +668,7 @@ end
 
 function Main:ESPPlayer(playerName)
     local target = self:FindPlayer(playerName)
-    if target then
+    if target and target.Character then
         self:CreateESP(target.Character, target.Name)
         self.UI:Notify("ESP: " .. target.Name, "success")
     else
@@ -899,211 +743,195 @@ function Main:RemoveESP()
     self.UI:Notify("ESP Removed", "success")
 end
 
-function Main:GiveTPTool()
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if not backpack then
-        self.UI:Notify("Backpack not found!", "error")
-        return
-    end
-    
-    local existingTool = backpack:FindFirstChild("Teleport Tool")
-    if existingTool then
-        existingTool:Destroy()
-    end
-    
-    local character = LocalPlayer.Character
-    if character then
-        local equippedTool = character:FindFirstChild("Teleport Tool")
-        if equippedTool then
-            equippedTool:Destroy()
-        end
-    end
-    
-    local tool = Instance.new("Tool")
-    tool.Name = "Teleport Tool"
-    tool.RequiresHandle = false
-    tool.CanBeDropped = false
-    
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(1, 1, 1)
-    handle.BrickColor = BrickColor.new("Cyan")
-    handle.Material = Enum.Material.Neon
-    handle.Anchored = false
-    handle.CanCollide = false
-    handle.Parent = tool
-    
-    local pointLight = Instance.new("PointLight")
-    pointLight.Color = Color3.fromRGB(0, 255, 255)
-    pointLight.Brightness = 2
-    pointLight.Range = 10
-    pointLight.Parent = handle
-    
-    local clickDetector = Instance.new("ClickDetector")
-    clickDetector.Parent = handle
-    
-    tool.Activated:Connect(function()
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local mouse = LocalPlayer:GetMouse()
-            if mouse.Target then
-                local targetPos = mouse.Hit.Position + Vector3.new(0, 3, 0) 
-                character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-            else
-                self.UI:Notify("No valid target position!", "error")
-            end
-        end
-    end)
-    
-    clickDetector.MouseClick:Connect(function()
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = handle.Position + Vector3.new(0, 5, 0) 
-            character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-        end
-    end)
-    
-    tool.Parent = LocalPlayer.Backpack
-    self.UI:Notify("Teleport Tool Added to Backpack", "success")
-end
-
 function Main:FindPlayer(name)
+    if not name then return nil end
     name = name:lower()
     for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():find(name) or player.DisplayName:lower():find(name) then
+        if player.Name:lower():find(name, 1, true) or player.DisplayName:lower():find(name, 1, true) then
             return player
         end
     end
     return nil
 end
 
-function Main:ShowCommandsList()
-    if self.CommandsWindow then
-        self.CommandsWindow:Destroy()
-        self.CommandsWindow = nil
-        return
+function Main:ToggleGodMode(enable)
+    self.GodMode = enable or not self.GodMode
+    
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if self.GodMode then
+                humanoid.MaxHealth = math.huge
+                humanoid.Health = math.huge
+            else
+                humanoid.MaxHealth = 100
+                humanoid.Health = 100
+            end
+        end
     end
+    
+    self.UI:Notify("God Mode " .. (self.GodMode and "Enabled" or "Disabled"), self.GodMode and "success" or "info")
+end
 
-    self.CommandsWindow = Instance.new("Frame")
-    self.CommandsWindow.Size = UDim2.new(0, 400, 0, 500)
-    self.CommandsWindow.Position = UDim2.new(0.5, -200, 0.5, -250)
-    self.CommandsWindow.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    self.CommandsWindow.BackgroundTransparency = 0.1
-    self.CommandsWindow.Parent = self.UI.ScreenGui
+function Main:ToggleXRay()
+    self.XRay = not self.XRay
+    
+    if self.XRay then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.Transparency < 1 then
+                part.LocalTransparencyModifier = 0.5
+            end
+        end
+        self.UI:Notify("XRay Enabled", "success")
+    else
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
+        end
+        self.UI:Notify("XRay Disabled", "info")
+    end
+end
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = self.CommandsWindow
+function Main:ToggleFullbright()
+    self.Fullbright = not self.Fullbright
+    
+    if self.Fullbright then
+        game:GetService("Lighting").Ambient = Color3.new(1, 1, 1)
+        game:GetService("Lighting").Brightness = 2
+        game:GetService("Lighting").GlobalShadows = false
+        self.UI:Notify("Fullbright Enabled", "success")
+    else
+        game:GetService("Lighting").Ambient = Color3.new(0, 0, 0)
+        game:GetService("Lighting").Brightness = 1
+        game:GetService("Lighting").GlobalShadows = true
+        self.UI:Notify("Fullbright Disabled", "info")
+    end
+end
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = self.UI.AccentColor
-    stroke.Thickness = 2
-    stroke.Parent = self.CommandsWindow
+function Main:ToggleInfiniteJump()
+    self.InfiniteJump = not self.InfiniteJump
+    self.UI:Notify("Infinite Jump " .. (self.InfiniteJump and "Enabled" or "Disabled"), self.InfiniteJump and "success" or "info")
+end
 
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.BackgroundTransparency = 1
-    title.Text = "COMMANDS LIST"
-    title.TextColor3 = self.UI.TextColor
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-    title.Parent = self.CommandsWindow
+function Main:ToggleAntiAFK()
+    self.AntiAFK = not self.AntiAFK
+    self.UI:Notify("Anti-AFK " .. (self.AntiAFK and "Enabled" or "Disabled"), self.AntiAFK and "success" or "info")
+end
 
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -35, 0, 5)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 14
-    closeBtn.Parent = self.CommandsWindow
+function Main:ToggleAutoClicker()
+    self.AutoClicker = not self.AutoClicker
+    self.UI:Notify("Auto-Clicker " .. (self.AutoClicker and "Enabled" or "Disabled"), self.AutoClicker and "success" or "info")
+end
 
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeBtn
+function Main:SetTime(time)
+    game:GetService("Lighting").ClockTime = tonumber(time) or 12
+    self.UI:Notify("Time Set: " .. game:GetService("Lighting").ClockTime, "success")
+end
 
-    closeBtn.MouseButton1Click:Connect(function()
-        self.CommandsWindow:Destroy()
-        self.CommandsWindow = nil
+function Main:SetFOV(fov)
+    workspace.CurrentCamera.FieldOfView = tonumber(fov) or 70
+    self.UI:Notify("FOV Set: " .. workspace.CurrentCamera.FieldOfView, "success")
+end
+
+function Main:Rejoin()
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end
+
+function Main:RejoinRefresh()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end
+
+function Main:ExitGame()
+    game:Shutdown()
+end
+
+function Main:ServerHop()
+    local gameId = tostring(game.PlaceId)
+    local servers = {}
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
     end)
-
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, -20, 1, -60)
-    scrollFrame.Position = UDim2.new(0, 10, 0, 45)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.Parent = self.CommandsWindow
-
-    local commandsList = {
-        {"fly [speed]", "Toggle flight with optional speed"},
-        {"noclip", "Toggle noclip through walls"},
-        {"godmode", "Toggle invincibility"},
-        {"speed [number]", "Set walk speed (default 16)"},
-        {"jump [number]", "Set jump power (default 50)"},
-        {"esp [player]", "Show ESP for specific player"},
-        {"espall", "Show ESP for all players"},
-        {"espnpc", "Show ESP for NPCs"},
-        {"removeesp", "Remove all ESP"},
-        {"watch [player]", "Spectate a player"},
-        {"tp [player]", "Teleport to a player"},
-        {"reset", "Reset your character"},
-        {"infinitejump", "Toggle infinite jumping"},
-        {"antiafk", "Toggle anti-afk"},
-        {"autoclick", "Toggle auto-clicker"},
-        {"time [number]", "Set game time (0-24)"},
-        {"fov [number]", "Set camera FOV"},
-        {"xray", "Toggle x-ray vision"},
-        {"fullbright", "Toggle fullbright lighting"},
-        {"rejoin/rj", "Rejoin the game"},
-        {"rejoinrefresh/rjre", "Rejoin to same position"},
-        {"exit", "Leave the game"},
-        {"serverhop/shop", "Hop to random server"},
-        {"pingserverhop/pshop", "Hop to best ping server"},
-        {"antifling/af", "Toggle anti-fling"},
-        {"unantifling/uaf", "Disable anti-fling"},
-        {"antikick/ak", "Toggle anti-kick"},
-        {"commands", "Show this commands list"}
-    }
-
-    local uiListLayout = Instance.new("UIListLayout")
-    uiListLayout.Padding = UDim.new(0, 8)
-    uiListLayout.Parent = scrollFrame
-
-    for i, commandData in ipairs(commandsList) do
-        local commandFrame = Instance.new("Frame")
-        commandFrame.Size = UDim2.new(1, 0, 0, 40)
-        commandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        commandFrame.BackgroundTransparency = 0.2
-        commandFrame.Parent = scrollFrame
-
-        local commandCorner = Instance.new("UICorner")
-        commandCorner.CornerRadius = UDim.new(0, 6)
-        commandCorner.Parent = commandFrame
-
-        local commandName = Instance.new("TextLabel")
-        commandName.Size = UDim2.new(0.4, -5, 1, 0)
-        commandName.Position = UDim2.new(0, 10, 0, 0)
-        commandName.BackgroundTransparency = 1
-        commandName.Text = commandData[1]
-        commandName.TextColor3 = self.UI.AccentColor
-        commandName.Font = Enum.Font.GothamBold
-        commandName.TextSize = 14
-        commandName.TextXAlignment = Enum.TextXAlignment.Left
-        commandName.Parent = commandFrame
-
-        local commandDesc = Instance.new("TextLabel")
-        commandDesc.Size = UDim2.new(0.6, -10, 1, 0)
-        commandDesc.Position = UDim2.new(0.4, 5, 0, 0)
-        commandDesc.BackgroundTransparency = 1
-        commandDesc.Text = commandData[2]
-        commandDesc.TextColor3 = self.UI.TextColor
-        commandDesc.Font = Enum.Font.Gotham
-        commandDesc.TextSize = 12
-        commandDesc.TextXAlignment = Enum.TextXAlignment.Left
-        commandDesc.Parent = commandFrame
+    
+    if success and result and result.data then
+        for _, server in ipairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server)
+            end
+        end
+        
+        if #servers > 0 then
+            local randomServer = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer.id, LocalPlayer)
+        else
+            self.UI:Notify("No servers found!", "error")
+        end
+    else
+        self.UI:Notify("Failed to find servers", "error")
     end
+end
 
-    task.wait()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
+function Main:PingServerHop()
+    local gameId = tostring(game.PlaceId)
+    local servers = {}
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    
+    if success and result and result.data then
+        for _, server in ipairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server)
+            end
+        end
+        
+        if #servers > 0 then
+            local bestServer = servers[1]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer.id, LocalPlayer)
+        else
+            self.UI:Notify("No servers found!", "error")
+        end
+    else
+        self.UI:Notify("Failed to find servers", "error")
+    end
+end
+
+function Main:ToggleAntiFling()
+    self.AntiFling = not self.AntiFling
+    
+    if self.AntiFling then
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Massless = true
+                    part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0)
+                end
+            end
+        end
+        self.UI:Notify("Anti-Fling Enabled", "success")
+    else
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Massless = false
+                    part.CustomPhysicalProperties = nil
+                end
+            end
+        end
+        self.UI:Notify("Anti-Fling Disabled", "info")
+    end
+end
+
+function Main:ToggleAntiKick()
+    self.AntiKick = not self.AntiKick
+    self:SetupAntiKick()
+    self.UI:Notify("Anti-Kick " .. (self.AntiKick and "Enabled" or "Disabled"), self.AntiKick and "success" or "info")
+end
+
+function Main:ShowCommandsList()
+    self.UI:Notify("Use ';' to open command bar and see suggestions", "info")
 end
 
 Main:Init()
