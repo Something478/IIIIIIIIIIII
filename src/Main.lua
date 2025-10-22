@@ -294,7 +294,6 @@ function Main:FlyToggle()
     self.Flying = not self.Flying
 
     if self.Flying then
-        -- Create buttons if they don't exist
         if not self.FlyButton then
             self:CreateFlyButton()
         end
@@ -302,11 +301,9 @@ function Main:FlyToggle()
             self:CreateWASDController()
         end
         
-        -- Show buttons
         self.FlyButton.Visible = true
         self.WASDFrame.Visible = true
         
-        -- Animate to green
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local tween = TweenService:Create(self.FlyButton, tweenInfo, {
             BackgroundColor3 = Color3.fromRGB(0, 255, 0),
@@ -317,7 +314,6 @@ function Main:FlyToggle()
         self:StartFlying()
         self.UI:Notify("Flight Enabled", "success")
     else
-        -- Animate back to black
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local tween = TweenService:Create(self.FlyButton, tweenInfo, {
             BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -325,7 +321,6 @@ function Main:FlyToggle()
         })
         tween:Play()
         
-        -- Hide buttons
         if self.FlyButton then
             self.FlyButton.Visible = false
         end
@@ -563,7 +558,6 @@ function Main:RejoinRefresh()
     local savedPosition = humanoidRootPart and humanoidRootPart.CFrame
     
     if savedPosition then
-        -- Save position to data store for persistence
         local success = pcall(function()
             local dataStore = game:GetService("DataStoreService"):GetDataStore("SyntaxPositionSave")
             dataStore:SetAsync(LocalPlayer.UserId .. "_position", {
@@ -907,22 +901,36 @@ end
 
 function Main:GiveTPTool()
     local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if backpack then
-        local existingTool = backpack:FindFirstChild("Teleport Tool")
-        if existingTool then
-            existingTool:Destroy()
+    if not backpack then
+        self.UI:Notify("Backpack not found!", "error")
+        return
+    end
+    
+    local existingTool = backpack:FindFirstChild("Teleport Tool")
+    if existingTool then
+        existingTool:Destroy()
+    end
+    
+    local character = LocalPlayer.Character
+    if character then
+        local equippedTool = character:FindFirstChild("Teleport Tool")
+        if equippedTool then
+            equippedTool:Destroy()
         end
     end
     
     local tool = Instance.new("Tool")
     tool.Name = "Teleport Tool"
-    tool.RequiresHandle = true
+    tool.RequiresHandle = false
+    tool.CanBeDropped = false
     
     local handle = Instance.new("Part")
     handle.Name = "Handle"
     handle.Size = Vector3.new(1, 1, 1)
     handle.BrickColor = BrickColor.new("Cyan")
     handle.Material = Enum.Material.Neon
+    handle.Anchored = false
+    handle.CanCollide = false
     handle.Parent = tool
     
     local pointLight = Instance.new("PointLight")
@@ -931,17 +939,30 @@ function Main:GiveTPTool()
     pointLight.Range = 10
     pointLight.Parent = handle
     
+    local clickDetector = Instance.new("ClickDetector")
+    clickDetector.Parent = handle
+    
     tool.Activated:Connect(function()
-        local character = LocalPlayer.Character
         if character and character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = handle.Position
+            local mouse = LocalPlayer:GetMouse()
+            if mouse.Target then
+                local targetPos = mouse.Hit.Position + Vector3.new(0, 3, 0) 
+                character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+            else
+                self.UI:Notify("No valid target position!", "error")
+            end
+        end
+    end)
+    
+    clickDetector.MouseClick:Connect(function()
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = handle.Position + Vector3.new(0, 5, 0) 
             character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-            self.UI:Notify("Teleported!", "success")
         end
     end)
     
     tool.Parent = LocalPlayer.Backpack
-    self.UI:Notify("Teleport Tool Added", "success")
+    self.UI:Notify("Teleport Tool Added to Backpack", "success")
 end
 
 function Main:FindPlayer(name)
