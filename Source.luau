@@ -6,13 +6,13 @@ getgenv().Syntax = {
 }
 
 local function LoadModule(name)
-    local url = "https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/" .. name .. ".luau"
+    local url = "https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/"..name..".luau"
     local success, result = pcall(function()
         return loadstring(game:HttpGet(url))()
     end)
     
     if not success then
-        warn("Failed to load " .. name .. ": " .. result)
+        warn("Failed to load "..name..": " .. result)
         return nil
     end
     
