@@ -21,5 +21,5 @@ My profiles:
 
 Script:  
 ```
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/Source.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/refs/heads/main/Source.luau"))()
 ```
