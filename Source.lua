@@ -6,7 +6,7 @@ getgenv().Syntax = {
 }
 
 local function LoadModule(name)
-    local url = "https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/src/" .. name .. ".lua"
+    local url = "https://raw.githubusercontent.com/Something478/IIIIIIIIIIII/main/" .. name .. ".lua"
     local success, result = pcall(function()
         return loadstring(game:HttpGet(url))()
     end)
@@ -20,7 +20,7 @@ local function LoadModule(name)
 end
 
 local UI = LoadModule("UI")
-local Commands = LoadModule("Commands") 
+local Commands = LoadModule("Cmds") 
 local Main = LoadModule("Main")
 
 if UI and Commands and Main then
@@ -28,5 +28,5 @@ if UI and Commands and Main then
     Main:Init()
     getgenv().Syntax.Loaded = true
 else
-    warn("Syntax Commands failed to load one or more modules!")
+    warn("[Syntax Commands]: failed to load one or more modules!")
 end
