@@ -232,6 +232,24 @@ function Commands:RegisterAll()
                 Main:SetFlySpeed(args[1])
             end,
             Description = "Set flight speed"
+        },
+        {
+            Names = {"prefix"},
+            Function = function(args)
+                if args[1] then
+                    Main:SetPrefix(args[1])
+                else
+                    Main:Notify("Current prefix: " .. Main.CommandPrefix, "info")
+                end
+            end,
+            Description = "Set or view command prefix"
+        },
+        {
+            Names = {"togglechat", "chat"},
+            Function = function(args)
+                Main:ToggleChat()
+            end,
+            Description = "Toggle chat commands"
         }
     }
 end
