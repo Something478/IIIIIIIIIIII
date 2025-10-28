@@ -213,7 +213,7 @@ function Commands:RegisterAll()
             Description = "Toggle auto-clicker"
         },
         {
-            Names = {"time", "settime"},
+            Names = {"e", "settime"},
             Function = function(args)
                 Main:SetTime(args[1])
             end,
