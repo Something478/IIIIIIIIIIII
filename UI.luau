@@ -34,7 +34,7 @@ UI.CommandSuggestions = {
     "infinitejump (ij)",
     "antiafk (aafk)",
     "autoclick (ac) (may not work)",
-    "time [num]",
+    "time [num] (settime)",
     "fov [num]",
     "xray",
     "fullbright (fb)",
